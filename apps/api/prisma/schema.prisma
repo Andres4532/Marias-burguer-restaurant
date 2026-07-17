@@ -1,0 +1,204 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  CAJERA
+  JEFA
+}
+
+enum OrderType {
+  MESA
+  PARA_LLEVAR
+  DELIVERY
+}
+
+enum OrderStatus {
+  PENDIENTE
+  EN_COCINA
+  LISTO
+  ENTREGADO
+  CANCELADO
+}
+
+enum OrderSource {
+  CAJA
+  MENU_PUBLICO
+}
+
+enum PaymentMethod {
+  EFECTIVO
+  QR
+  TARJETA
+}
+
+enum PaymentStatus {
+  PENDIENTE
+  PAGADO
+  REEMBOLSADO
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  role         UserRole
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  ordersCreated Order[]   @relation("CreatedBy")
+  payments      Payment[]
+}
+
+model Category {
+  id        String    @id @default(cuid())
+  name      String
+  sortOrder Int       @default(0)
+  isActive  Boolean   @default(true)
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  products Product[]
+}
+
+model Product {
+  id          String    @id @default(cuid())
+  categoryId  String
+  name        String
+  description String?
+  price       Decimal   @db.Decimal(10, 2)
+  imageUrl    String?
+  isActive    Boolean   @default(true)
+  deletedAt   DateTime?
+  sortOrder   Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  category   Category       @relation(fields: [categoryId], references: [id])
+  extras     ProductExtra[]
+  orderItems OrderItem[]
+}
+
+model Extra {
+  id        String    @id @default(cuid())
+  name      String
+  price     Decimal   @default(0) @db.Decimal(10, 2)
+  isActive  Boolean   @default(true)
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  products        ProductExtra[]
+  orderItemExtras OrderItemExtra[]
+}
+
+model ProductExtra {
+  productId String
+  extraId   String
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  extra   Extra   @relation(fields: [extraId], references: [id], onDelete: Cascade)
+
+  @@id([productId, extraId])
+}
+
+model Order {
+  id          String      @id @default(cuid())
+  orderNumber Int
+  type        OrderType
+  source      OrderSource @default(CAJA)
+  status      OrderStatus @default(PENDIENTE)
+
+  tableNumber String?
+
+  customerName        String?
+  customerPhone       String?
+  deliveryAddress     String?
+  deliveryReference   String?
+  deliveryLatitude    Decimal? @db.Decimal(10, 7)
+  deliveryLongitude   Decimal? @db.Decimal(10, 7)
+
+  subtotal Decimal @db.Decimal(10, 2)
+  total    Decimal @db.Decimal(10, 2)
+  notes    String?
+
+  createdById String?
+  createdBy   User?   @relation("CreatedBy", fields: [createdById], references: [id])
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  paidAt    DateTime?
+
+  items    OrderItem[]
+  payments Payment[]
+
+  @@index([status, createdAt])
+  @@index([source, status])
+}
+
+model RestaurantSettings {
+  id                  String   @id @default("default")
+  name                String   @default("Mi Restaurante")
+  slug                String   @unique @default("mi-restaurante")
+  phone               String?
+  logoUrl             String?
+  publicMenuEnabled   Boolean  @default(true)
+  publicMenuOpenTime  String?  @default("08:00")
+  publicMenuCloseTime String?  @default("22:00")
+  updatedAt           DateTime @updatedAt
+}
+
+model OrderItem {
+  id          String  @id @default(cuid())
+  orderId     String
+  productId   String
+  productName String
+  unitPrice   Decimal @db.Decimal(10, 2)
+  quantity    Int
+  lineTotal   Decimal @db.Decimal(10, 2)
+  notes       String?
+
+  order   Order            @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product          @relation(fields: [productId], references: [id])
+  extras  OrderItemExtra[]
+}
+
+model OrderItemExtra {
+  id          String  @id @default(cuid())
+  orderItemId String
+  extraId     String
+  extraName   String
+  price       Decimal @db.Decimal(10, 2)
+
+  orderItem OrderItem @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+  extra     Extra     @relation(fields: [extraId], references: [id])
+}
+
+model Payment {
+  id          String        @id @default(cuid())
+  orderId     String
+  method      PaymentMethod
+  amount      Decimal       @db.Decimal(10, 2)
+  status      PaymentStatus @default(PAGADO)
+  paidAt      DateTime      @default(now())
+  createdById String
+  createdBy   User          @relation(fields: [createdById], references: [id])
+
+  order Order @relation(fields: [orderId], references: [id])
+
+  @@index([paidAt])
+  @@index([method, paidAt])
+}
+
+model DailyOrderCounter {
+  date       DateTime @id @db.Date
+  lastNumber Int      @default(0)
+}
