@@ -3,7 +3,7 @@ QUE HACER EN TU PC ANTES DE QUE TRAIGAN LA LAP
 
 1. PROBAR TODO EL FLUJO (30-45 min)
    - npm run dev
-   - Login jefa y cajera
+   - Login jefa
    - POS: pedido y cobro
    - Menu publico en otra pestana -> Entrantes -> Cobrar
    - Cambiar slug/nombre en Configuracion (anota el slug final)
@@ -31,6 +31,7 @@ QUE HACER EN TU PC ANTES DE QUE TRAIGAN LA LAP
    - Recordatorio: cambiar password123 despues del primer login
 
 7. NO HACER
+   - No ejecutar npm run db:seed en una BD con productos reales (salvo instalacion nueva)
    - No copiar tu apps\api\.env con secretos de produccion si no aplica
    - No copiar node_modules (muy pesado; npm install en la lap)
 

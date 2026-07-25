@@ -2,6 +2,8 @@ import { redirect } from 'next/navigation';
 import { API_URL } from '@/lib/api-client';
 import { Card } from '@/components/ui/Card';
 
+export const dynamic = 'force-dynamic';
+
 async function getMenuSlug(): Promise<string | null> {
   try {
     const res = await fetch(`${API_URL}/public/menu/link`, {

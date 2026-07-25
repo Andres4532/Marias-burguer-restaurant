@@ -59,9 +59,11 @@ npm run db:deploy
 # o, para desarrollo con historial interactivo:
 # npm run db:migrate
 
-# 6. Cargar datos demo (usuarios, categorías, productos)
+# 6. Cargar datos demo (usuarios, categorías, productos) — solo primera vez en BD vacía
 npm run db:seed
 ```
+
+> **Importante:** `db:seed` ya **no borra** productos ni pedidos si la base tiene datos. Aun así, no lo uses en producción con menú real salvo que sepas lo que hace. Para backup: `npm run db:backup`.
 
 ## Comandos de desarrollo
 
@@ -96,8 +98,9 @@ npm run db:studio
 
 | Rol    | Email                   | Contraseña   |
 |--------|-------------------------|--------------|
-| Jefa   | jefa@restaurante.com    | password123  |
-| Cajera | cajera@restaurante.com  | password123  |
+| Jefa   | camilacortez775@gmail.com | password123  |
+
+Crea cajeras desde **Usuarios** (solo jefa).
 
 ## Fase 0 — Completada
 
@@ -231,7 +234,7 @@ npm run prisma:generate -w api
 # Login
 curl -X POST http://localhost:3001/api/v1/auth/login \
   -H "Content-Type: application/json" \
-  -d "{\"email\":\"cajera@restaurante.com\",\"password\":\"password123\"}"
+  -d "{\"email\":\"camilacortez775@gmail.com\",\"password\":\"password123\"}"
 
 # Perfil (requiere token)
 curl http://localhost:3001/api/v1/auth/me \

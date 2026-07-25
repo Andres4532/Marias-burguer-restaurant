@@ -57,7 +57,8 @@ Write-Host "`n[4/7] Migraciones..." -ForegroundColor Yellow
 npm run db:deploy
 
 Write-Host "`n[5/7] Datos iniciales (seed)..." -ForegroundColor Yellow
-$seed = Read-Host "  Cargar datos demo? (S/n)"
+Write-Host "  El seed ya NO borra productos si la BD tiene datos." -ForegroundColor DarkGray
+$seed = Read-Host "  Ejecutar seed (usuarios + demo solo si BD vacia)? (S/n)"
 if ($seed -eq "" -or $seed -eq "S" -or $seed -eq "s") {
   npm run db:seed
 } else {
@@ -81,6 +82,6 @@ Menu publico (misma laptop, otra pestana):
   (cambia el slug en Configuracion si es distinto)
 
 Demo (cambiar contrasenas despues):
-  jefa@restaurante.com / cajera@restaurante.com — password123
+  camilacortez775@gmail.com — password123 (crea cajeras en Usuarios)
 
 "@

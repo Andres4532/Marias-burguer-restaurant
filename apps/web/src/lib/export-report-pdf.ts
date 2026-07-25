@@ -1,4 +1,3 @@
-import { jsPDF } from 'jspdf';
 import type { SalesReport } from './reports';
 import {
   formatReportDate,
@@ -10,7 +9,9 @@ const PAGE_WIDTH = 210;
 const CONTENT_WIDTH = PAGE_WIDTH - MARGIN * 2;
 const LINE_HEIGHT = 6;
 
-function ensureSpace(doc: jsPDF, y: number, needed = LINE_HEIGHT): number {
+type PdfDoc = InstanceType<(typeof import('jspdf'))['jsPDF']>;
+
+function ensureSpace(doc: PdfDoc, y: number, needed = LINE_HEIGHT): number {
   if (y + needed > 285) {
     doc.addPage();
     return MARGIN;
@@ -19,7 +20,7 @@ function ensureSpace(doc: jsPDF, y: number, needed = LINE_HEIGHT): number {
 }
 
 function writeLine(
-  doc: jsPDF,
+  doc: PdfDoc,
   text: string,
   y: number,
   options?: { size?: number; bold?: boolean; color?: [number, number, number] },
@@ -39,11 +40,12 @@ function writeLine(
   return y + lines.length * (size > 12 ? 8 : LINE_HEIGHT);
 }
 
-export function downloadReportPdf(
+export async function downloadReportPdf(
   report: SalesReport,
   formatPrice: (n: number) => string,
   paymentLabels: Record<string, string>,
 ) {
+  const { jsPDF } = await import('jspdf');
   const doc = new jsPDF({ unit: 'mm', format: 'a4' });
   let y = MARGIN;
 

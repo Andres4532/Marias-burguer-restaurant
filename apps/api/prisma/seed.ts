@@ -3,35 +3,46 @@ import * as bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
-async function main() {
-  console.log('🌱 Iniciando seed...');
+const JEFA_EMAIL = 'camilacortez775@gmail.com';
+const DEMO_CAJERA_EMAIL = 'cajera@restaurante.com';
 
+async function seedUsers() {
   const passwordHash = await bcrypt.hash('password123', 10);
 
-  const jefa = await prisma.user.upsert({
+  await prisma.user.updateMany({
     where: { email: 'jefa@restaurante.com' },
-    update: {},
+    data: { email: JEFA_EMAIL },
+  });
+
+  const jefa = await prisma.user.upsert({
+    where: { email: JEFA_EMAIL },
+    update: { role: UserRole.JEFA },
     create: {
-      email: 'jefa@restaurante.com',
+      email: JEFA_EMAIL,
       passwordHash,
       name: 'María García',
       role: UserRole.JEFA,
     },
   });
 
-  const cajera = await prisma.user.upsert({
-    where: { email: 'cajera@restaurante.com' },
-    update: {},
-    create: {
-      email: 'cajera@restaurante.com',
-      passwordHash,
-      name: 'Ana López',
-      role: UserRole.CAJERA,
-    },
+  const demoCajera = await prisma.user.findUnique({
+    where: { email: DEMO_CAJERA_EMAIL },
   });
+  if (demoCajera) {
+    await prisma.payment.deleteMany({ where: { createdById: demoCajera.id } });
+    await prisma.order.updateMany({
+      where: { createdById: demoCajera.id },
+      data: { createdById: null },
+    });
+    await prisma.user.delete({ where: { id: demoCajera.id } });
+    console.log(`🗑️  Usuario demo eliminado: ${DEMO_CAJERA_EMAIL}`);
+  }
 
-  console.log(`✅ Usuarios: ${jefa.email} (JEFA), ${cajera.email} (CAJERA)`);
+  console.log(`✅ Usuario jefa: ${jefa.email} (JEFA)`);
+  return jefa;
+}
 
+async function seedSettingsIfMissing() {
   await prisma.restaurantSettings.upsert({
     where: { id: 'default' },
     update: {},
@@ -45,16 +56,24 @@ async function main() {
       publicMenuCloseTime: '22:00',
     },
   });
+  console.log('✅ Configuración del restaurante (solo crea si faltaba)');
+}
 
-  console.log('✅ Configuración: menú público en /menu/mi-restaurante');
-  await prisma.productExtra.deleteMany();
-  await prisma.orderItemExtra.deleteMany();
-  await prisma.orderItem.deleteMany();
-  await prisma.payment.deleteMany();
-  await prisma.order.deleteMany();
-  await prisma.product.deleteMany();
-  await prisma.extra.deleteMany();
-  await prisma.category.deleteMany();
+/** Catálogo demo: SOLO en base de datos vacía (primera instalación). */
+async function seedDemoCatalogIfEmpty() {
+  const [products, orders] = await Promise.all([
+    prisma.product.count(),
+    prisma.order.count(),
+  ]);
+
+  if (products > 0 || orders > 0) {
+    console.log(
+      '⏭️  Ya hay productos o pedidos en la BD — el seed NO borra ni reemplaza tu catálogo.',
+    );
+    return;
+  }
+
+  console.log('📦 Base vacía: cargando catálogo demo...');
 
   const categorias = await Promise.all([
     prisma.category.create({
@@ -191,12 +210,27 @@ async function main() {
   });
 
   console.log('✅ Categorías:', categorias.map((c) => c.name).join(', '));
-  console.log('✅ Productos demo:', clasica.name, doble.name, pizzaMargarita.name, pizzaPepperoni.name);
+  console.log(
+    '✅ Productos demo:',
+    clasica.name,
+    doble.name,
+    pizzaMargarita.name,
+    pizzaPepperoni.name,
+  );
   console.log('✅ Extras:', extras.map((e) => e.name).join(', '));
+}
+
+async function main() {
+  console.log('🌱 Iniciando seed (seguro: no borra catálogo existente)...');
+
+  await seedUsers();
+  await seedSettingsIfMissing();
+  await seedDemoCatalogIfEmpty();
+
   console.log('');
-  console.log('📋 Credenciales de prueba (password: password123):');
-  console.log('   Jefa:   jefa@restaurante.com');
-  console.log('   Cajera: cajera@restaurante.com');
+  console.log('📋 Jefa (password por defecto si recién creada: password123):');
+  console.log(`   ${JEFA_EMAIL}`);
+  console.log('   Cajera: créala en Usuarios (panel jefa)');
 }
 
 main()

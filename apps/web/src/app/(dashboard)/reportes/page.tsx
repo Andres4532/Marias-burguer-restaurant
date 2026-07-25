@@ -87,7 +87,7 @@ export default function ReportesPage() {
 
   const handleExport = () => {
     if (!report) return;
-    downloadReportPdf(report, formatPrice, PAYMENT_METHOD_LABELS);
+    void downloadReportPdf(report, formatPrice, PAYMENT_METHOD_LABELS);
   };
 
   if (loading || !isJefa) {

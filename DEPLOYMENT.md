@@ -115,6 +115,27 @@ curl http://localhost:3001/api/v1/health
 
 ---
 
+## Vercel (frontend Next.js)
+
+1. En el proyecto de Vercel → **Settings → General → Root Directory:** `apps/web`
+2. **Environment variables** (Production):
+   ```env
+   NEXT_PUBLIC_API_URL=https://TU-API-PUBLICA/api/v1
+   ```
+   Debe ser la URL **HTTPS** de tu API (Railway/Render/VPS). Sin esto, login y menú no conectan.
+3. El repo incluye `apps/web/vercel.json` (install desde monorepo) y `outputFileTracingRoot` en `next.config.ts`.
+4. **Redeploy** tras cambiar variables (Redeploy → sin cache si sigue fallando).
+5. La **API no va en Vercel**; despliégala aparte y configura `CORS_ORIGIN` con tu dominio `*.vercel.app` o dominio custom.
+
+### Error 500 `FUNCTION_INVOCATION_FAILED`
+
+- Confirma **Root Directory** = `apps/web`
+- Revisa **Runtime Logs** en Vercel (Deployments → Functions / Logs)
+- Variable `NEXT_PUBLIC_API_URL` definida y con `https://`
+- API accesible: `curl https://tu-api/api/v1/health`
+
+---
+
 ## 7. Problemas comunes
 
 | Problema | Solución |
