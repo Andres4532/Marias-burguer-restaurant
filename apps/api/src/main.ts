@@ -5,9 +5,23 @@ import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { getUploadRootDir } from './uploads/uploads.config';
 
+/** Solo scheme + host (+ puerto). Ignora rutas como /login en CORS_ORIGIN. */
+function normalizeCorsOrigin(value: string): string {
+  const trimmed = value.trim().replace(/\/$/, '');
+  if (!trimmed.includes('://')) return trimmed;
+  try {
+    return new URL(trimmed).origin;
+  } catch {
+    return trimmed;
+  }
+}
+
 function parseCorsOrigins(): string | string[] {
   const raw = process.env.CORS_ORIGIN ?? 'http://localhost:3000';
-  const origins = raw.split(',').map((o) => o.trim()).filter(Boolean);
+  const origins = raw
+    .split(',')
+    .map((o) => normalizeCorsOrigin(o))
+    .filter(Boolean);
   return origins.length === 1 ? origins[0] : origins;
 }
 
