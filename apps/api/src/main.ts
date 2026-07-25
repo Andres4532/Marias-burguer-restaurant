@@ -65,8 +65,8 @@ async function bootstrap() {
     }),
   );
 
-  const port = process.env.API_PORT ?? 3001;
-  await app.listen(port);
+  const port = Number(process.env.PORT ?? process.env.API_PORT ?? 3001);
+  await app.listen(port, '0.0.0.0');
   logger.log(`API en http://localhost:${port}/api/v1`);
   logger.log(`TZ restaurante: ${process.env.RESTAURANT_TIMEZONE ?? 'America/La_Paz'}`);
 }
