@@ -102,26 +102,6 @@ export default function LoginPage() {
             </Button>
           </form>
         </Card>
-
-        <Card
-          padding="sm"
-          className="mt-5 bg-background border-dashed text-xs text-text-secondary"
-        >
-          <p className="font-bold text-foreground mb-2">Acceso jefa (demo)</p>
-          <div className="space-y-1">
-            <p>
-              <span className="font-semibold text-foreground">Correo:</span>{' '}
-              camilacortez775@gmail.com
-            </p>
-            <p>
-              <span className="font-semibold text-foreground">Contraseña:</span>{' '}
-              password123
-            </p>
-            <p className="pt-1 text-text-secondary">
-              Las cajeras se crean en Usuarios.
-            </p>
-          </div>
-        </Card>
       </div>
     </div>
   );
