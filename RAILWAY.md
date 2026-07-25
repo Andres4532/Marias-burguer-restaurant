@@ -18,15 +18,17 @@ Usa el **Dockerfile** incluido en la raíz del repo.
 
 ### 2. Build
 
-**Settings → Build:**
+**Settings → Build** (pestaña Configuration):
 
 | Campo | Valor |
 |--------|--------|
-| **Builder** | Dockerfile |
+| **Builder** | **Dockerfile** (NO Railpack / Nixpacks) |
 | **Dockerfile path** | `Dockerfile.api` |
-| **Root directory** | `/` (raíz del repo, vacío o `.`) |
+| **Root directory** | vacío (raíz del repo) |
 
-Guarda y **Redeploy**.
+El repo incluye `railway.toml` para forzar Dockerfile. **Sube a GitHub** antes de redeploy.
+
+Si sigue en **Railpack**: en Build → cambia manualmente a **Dockerfile**.
 
 ### 3. Variables (Settings → Variables)
 
