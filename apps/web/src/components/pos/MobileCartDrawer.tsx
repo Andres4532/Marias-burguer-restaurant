@@ -3,7 +3,7 @@
 import type { ReactNode } from 'react';
 import { CartPanel } from '@/components/pos/CartPanel';
 import { formatPrice } from '@/lib/catalog';
-import type { useCart } from '@/hooks/useCart';
+import type { useCart, CartItem } from '@/hooks/useCart';
 
 type Cart = ReturnType<typeof useCart>;
 
@@ -17,6 +17,7 @@ interface MobileCartDrawerProps {
   submitLabel?: string;
   header?: ReactNode;
   wide?: boolean;
+  getMaxQuantity?: (item: CartItem) => number;
 }
 
 export function MobileCartDrawer({
@@ -29,6 +30,7 @@ export function MobileCartDrawer({
   submitLabel,
   header,
   wide = false,
+  getMaxQuantity,
 }: MobileCartDrawerProps) {
   if (!open) return null;
 
@@ -67,6 +69,7 @@ export function MobileCartDrawer({
             submitting={submitting}
             onSubmit={onSubmit}
             submitLabel={submitLabel}
+            getMaxQuantity={getMaxQuantity}
           />
         </div>
       </div>

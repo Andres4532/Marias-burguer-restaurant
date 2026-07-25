@@ -31,7 +31,7 @@ const STATUS_FILTERS: Array<{ value: OrderStatus | ''; label: string }> = [
 const TYPE_FILTERS: Array<{ value: OrderType | ''; label: string }> = [
   { value: '', label: 'Todos los tipos' },
   { value: 'MESA', label: 'Mesa' },
-  { value: 'PARA_LLEVAR', label: 'Para llevar' },
+  { value: 'PARA_LLEVAR', label: 'Para recojo' },
   { value: 'DELIVERY', label: 'Delivery' },
 ];
 
@@ -183,18 +183,18 @@ export default function PedidosPage() {
                       <p className="text-lg font-extrabold text-foreground">
                         {formatPrice(order.total)}
                       </p>
-                      {!canCharge && (
-                        <p className="text-xs text-text-secondary mt-0.5 font-bold">
-                          Ver detalle →
-                        </p>
-                      )}
+                      <p className="text-xs text-text-secondary mt-0.5 font-bold">
+                        Ver detalle →
+                      </p>
                     </div>
                   </button>
-                  {canCharge && (
-                    <Link href={`/cobro/${order.id}`} className="shrink-0">
-                      <Button>Cobrar →</Button>
-                    </Link>
-                  )}
+                  <div className="flex shrink-0 flex-col gap-2 sm:flex-row sm:items-center">
+                    {canCharge && (
+                      <Link href={`/cobro/${order.id}`}>
+                        <Button className="w-full sm:w-auto">Cobrar →</Button>
+                      </Link>
+                    )}
+                  </div>
                 </div>
               );
             })}

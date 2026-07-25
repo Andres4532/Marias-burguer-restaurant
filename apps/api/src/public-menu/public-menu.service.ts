@@ -1,23 +1,15 @@
 import {
   Injectable,
   NotFoundException,
-  ForbiddenException,
-  HttpException,
-  HttpStatus,
 } from '@nestjs/common';
 import { CatalogService } from '../catalog/catalog.service';
 import { SettingsService } from '../settings/settings.service';
 import { OrdersService } from '../orders/orders.service';
 import { CreatePublicOrderDto } from '../orders/dto/create-public-order.dto';
-
-interface RateLimitEntry {
-  count: number;
-  resetAt: number;
-}
+import { InMemoryRateLimitService } from '../common/rate-limit/in-memory-rate-limit.service';
 
 @Injectable()
 export class PublicMenuService {
-  private rateLimits = new Map<string, RateLimitEntry>();
   private readonly maxOrders = 5;
   private readonly windowMs = 10 * 60 * 1000;
 
@@ -25,29 +17,8 @@ export class PublicMenuService {
     private settingsService: SettingsService,
     private catalogService: CatalogService,
     private ordersService: OrdersService,
+    private rateLimit: InMemoryRateLimitService,
   ) {}
-
-  private checkRateLimit(clientIp: string) {
-    const now = Date.now();
-    const entry = this.rateLimits.get(clientIp);
-
-    if (!entry || now > entry.resetAt) {
-      this.rateLimits.set(clientIp, {
-        count: 1,
-        resetAt: now + this.windowMs,
-      });
-      return;
-    }
-
-    if (entry.count >= this.maxOrders) {
-      throw new HttpException(
-        'Demasiados pedidos. Intenta de nuevo en unos minutos.',
-        HttpStatus.TOO_MANY_REQUESTS,
-      );
-    }
-
-    entry.count += 1;
-  }
 
   async getPublicLink() {
     const settings = await this.settingsService.getSettings();
@@ -89,7 +60,7 @@ export class PublicMenuService {
         openTime: settings.publicMenuOpenTime,
         closeTime: settings.publicMenuCloseTime,
       },
-      categories: catalog,
+      categories: catalog.categories,
     };
   }
 
@@ -105,7 +76,12 @@ export class PublicMenuService {
       throw new NotFoundException(closedMessage);
     }
 
-    this.checkRateLimit(clientIp);
+    this.rateLimit.assertWithinLimit(
+      `public-order:${clientIp}`,
+      this.maxOrders,
+      this.windowMs,
+      'Demasiados pedidos. Intenta de nuevo en unos minutos.',
+    );
 
     return this.ordersService.createFromPublicMenu(dto);
   }

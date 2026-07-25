@@ -1,12 +1,11 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Card } from '@/components/ui/Card';
 import { Input } from '@/components/ui/Input';
 import { FilterChip } from '@/components/ui/FilterChip';
-import { ExtraModal } from '@/components/pos/ExtraModal';
 import { CartPanel } from '@/components/pos/CartPanel';
 import { MobileCartBar, MobileCartDrawer } from '@/components/pos/MobileCartDrawer';
 import { DeliveryFormFields } from '@/components/orders/DeliveryFormFields';
@@ -15,6 +14,11 @@ import { ProductImage } from '@/components/ui/ProductImage';
 import { useCart } from '@/hooks/useCart';
 import { getCatalog, formatPrice, getErrorMessage } from '@/lib/catalog';
 import { createOrder } from '@/lib/orders';
+import {
+  canAddOneToCart,
+  isOutOfStock,
+  maxQuantityForCartLine,
+} from '@/lib/inventory';
 import type { CatalogCategory } from '@/types/catalog';
 import type { OrderType } from '@/types/orders';
 
@@ -22,7 +26,7 @@ type CatalogProduct = CatalogCategory['products'][number];
 
 const ORDER_TYPES: Array<{ value: OrderType; label: string }> = [
   { value: 'MESA', label: '🪑 Mesa' },
-  { value: 'PARA_LLEVAR', label: '🥡 Para llevar' },
+  { value: 'PARA_LLEVAR', label: '🥡 Para recojo' },
   { value: 'DELIVERY', label: '🛵 Delivery' },
 ];
 
@@ -34,15 +38,14 @@ export default function PosPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
-  const [extraModalProduct, setExtraModalProduct] = useState<CatalogProduct | null>(null);
   const [cartOpen, setCartOpen] = useState(false);
 
   const loadCatalog = useCallback(async () => {
     setLoading(true);
     try {
       const data = await getCatalog();
-      setCatalog(data);
-      if (data.length > 0) setActiveCategory(data[0].id);
+      setCatalog(data.categories);
+      if (data.categories.length > 0) setActiveCategory(data.categories[0].id);
     } catch (e) {
       setError(getErrorMessage(e));
     } finally {
@@ -54,19 +57,38 @@ export default function PosPage() {
     loadCatalog();
   }, [loadCatalog]);
 
-  const handleProductClick = (product: CatalogProduct) => {
-    if (product.extras.length > 0) {
-      setExtraModalProduct(product);
-    } else {
-      cart.addItem(product, []);
+  const productById = useMemo(() => {
+    const map = new Map<string, CatalogProduct>();
+    for (const cat of catalog) {
+      for (const p of cat.products) map.set(p.id, p);
     }
+    return map;
+  }, [catalog]);
+
+  const getMaxQuantity = useCallback(
+    (item: { key: string; productId: string }) => {
+      const product = productById.get(item.productId);
+      if (!product) return Number.POSITIVE_INFINITY;
+      return maxQuantityForCartLine(product, cart.items, item.key);
+    },
+    [productById, cart.items],
+  );
+
+  const tryAddProduct = (product: CatalogProduct) => {
+    if (isOutOfStock(product)) {
+      setError(`"${product.name}" está agotado`);
+      return;
+    }
+    if (!canAddOneToCart(product, cart.items)) {
+      setError(`No hay más unidades de "${product.name}" en inventario`);
+      return;
+    }
+    setError('');
+    cart.addItem(product, []);
   };
 
-  const handleConfirmExtras = (
-    product: CatalogProduct,
-    extras: Array<{ id: string; name: string; price: number }>,
-  ) => {
-    cart.addItem(product, extras);
+  const handleProductClick = (product: CatalogProduct) => {
+    tryAddProduct(product);
   };
 
   const handleSubmit = async () => {
@@ -131,12 +153,13 @@ export default function PosPage() {
         items: cart.items.map((item) => ({
           productId: item.productId,
           quantity: item.quantity,
-          extraIds: item.extras.map((e) => e.id),
+          extraIds: item.extras.length ? item.extras.map((e) => e.id) : undefined,
           notes: item.notes,
         })),
       });
       cart.clearCart();
       setCartOpen(false);
+      void loadCatalog();
       router.push(`/cobro/${order.id}`);
     } catch (e) {
       setError(getErrorMessage(e));
@@ -229,21 +252,30 @@ export default function PosPage() {
                 ))}
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                {currentCategory?.products.map((product) => (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 items-stretch">
+                {currentCategory?.products.map((product) => {
+                  const out = isOutOfStock(product);
+                  const showStock =
+                    product.trackStock && product.stockQuantity > 0;
+                  return (
                   <button
                     key={product.id}
                     type="button"
+                    disabled={out}
                     onClick={() => handleProductClick(product)}
-                    className="rounded-xl border border-border bg-background overflow-hidden text-left active:scale-[0.98] hover:shadow-md hover:border-primary/30 transition"
+                    className={`flex h-full flex-col rounded-xl border border-border bg-background overflow-hidden text-left transition ${
+                      out
+                        ? 'opacity-50 cursor-not-allowed'
+                        : 'active:scale-[0.98] hover:shadow-md hover:border-primary/30'
+                    }`}
                   >
                     <ProductImage
                       src={product.imageUrl}
                       alt={product.name}
-                      aspect="video"
-                      className="rounded-none"
+                      aspect="menu"
+                      className="w-full shrink-0 rounded-none"
                     />
-                    <div className="p-3">
+                    <div className="flex flex-1 flex-col p-3">
                       <p className="font-bold text-foreground text-sm leading-tight">
                         {product.name}
                       </p>
@@ -252,17 +284,28 @@ export default function PosPage() {
                           {product.description}
                         </p>
                       )}
-                      <div className="flex items-center justify-between mt-3 gap-2">
+                      <div className="mt-auto flex items-center justify-between gap-2 flex-wrap pt-3">
                         <span className="text-primary font-extrabold text-sm">
                           {formatPrice(product.price)}
                         </span>
-                        <span className="text-[10px] font-bold text-primary bg-primary/10 px-2 py-1 rounded-full">
-                          Agregar
-                        </span>
+                        {out ? (
+                          <span className="text-[10px] font-bold text-red-300 bg-red-950/50 px-2 py-1 rounded-full">
+                            Agotado
+                          </span>
+                        ) : showStock ? (
+                          <span className="text-[10px] font-bold text-text-secondary bg-background border border-border px-2 py-1 rounded-full">
+                            Quedan {product.stockQuantity}
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-bold text-primary bg-primary/10 px-2 py-1 rounded-full">
+                            Agregar
+                          </span>
+                        )}
                       </div>
                     </div>
                   </button>
-                ))}
+                  );
+                })}
               </div>
             </Card>
           )}
@@ -274,6 +317,7 @@ export default function PosPage() {
             error={error}
             submitting={submitting}
             onSubmit={handleSubmit}
+            getMaxQuantity={getMaxQuantity}
           />
         </Card>
       </div>
@@ -291,13 +335,7 @@ export default function PosPage() {
         error={error}
         submitting={submitting}
         onSubmit={handleSubmit}
-      />
-
-      <ExtraModal
-        product={extraModalProduct}
-        open={!!extraModalProduct}
-        onClose={() => setExtraModalProduct(null)}
-        onConfirm={handleConfirmExtras}
+        getMaxQuantity={getMaxQuantity}
       />
     </div>
   );

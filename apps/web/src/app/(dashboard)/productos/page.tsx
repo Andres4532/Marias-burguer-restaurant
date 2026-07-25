@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { Modal } from '@/components/ui/Modal';
 import { Badge } from '@/components/ui/Badge';
+import { Card } from '@/components/ui/Card';
 import { ProductImage } from '@/components/ui/ProductImage';
 import { ImageUploadField } from '@/components/ui/ImageUploadField';
 import {
@@ -26,7 +27,6 @@ import {
 import {
   getProducts,
   getCategories,
-  getExtras,
   createProduct,
   updateProduct,
   deleteProduct,
@@ -34,39 +34,41 @@ import {
   getErrorMessage,
 } from '@/lib/catalog';
 import { uploadProductImage } from '@/lib/uploads';
-import type { Product, Category, Extra } from '@/types/catalog';
+import type { Product, Category } from '@/types/catalog';
+import { getSortOrderForEnd } from '@/lib/sort-order';
 
 export default function ProductosPage() {
   const { loading, isJefa } = useRequireJefa();
   const [items, setItems] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [extras, setExtras] = useState<Extra[]>([]);
   const [loadingData, setLoadingData] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Product | null>(null);
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
 
+  const [deleteTarget, setDeleteTarget] = useState<Product | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
+
   const [categoryId, setCategoryId] = useState('');
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState('');
   const [imageUrl, setImageUrl] = useState('');
-  const [sortOrder, setSortOrder] = useState('0');
   const [isActive, setIsActive] = useState(true);
-  const [selectedExtras, setSelectedExtras] = useState<string[]>([]);
+  const [trackStock, setTrackStock] = useState(false);
+  const [stockQuantity, setStockQuantity] = useState('0');
 
   const load = useCallback(async () => {
     setLoadingData(true);
     try {
-      const [products, cats, ext] = await Promise.all([
+      const [products, cats] = await Promise.all([
         getProducts(undefined, true),
         getCategories(true),
-        getExtras(true),
       ]);
       setItems(products);
       setCategories(cats);
-      setExtras(ext);
     } catch (e) {
       setError(getErrorMessage(e));
     } finally {
@@ -80,14 +82,15 @@ export default function ProductosPage() {
 
   const openCreate = () => {
     setEditing(null);
-    setCategoryId(categories[0]?.id ?? '');
+    const defaultCategoryId = categories[0]?.id ?? '';
+    setCategoryId(defaultCategoryId);
     setName('');
     setDescription('');
     setPrice('');
     setImageUrl('');
-    setSortOrder('0');
     setIsActive(true);
-    setSelectedExtras([]);
+    setTrackStock(false);
+    setStockQuantity('0');
     setError('');
     setModalOpen(true);
   };
@@ -99,19 +102,29 @@ export default function ProductosPage() {
     setDescription(item.description ?? '');
     setPrice(String(item.price));
     setImageUrl(item.imageUrl ?? '');
-    setSortOrder(String(item.sortOrder));
     setIsActive(item.isActive);
-    setSelectedExtras(item.extras?.map((e) => e.id) ?? []);
+    setTrackStock(item.trackStock);
+    setStockQuantity(String(item.stockQuantity));
     setError('');
     setModalOpen(true);
   };
 
-  const toggleExtra = (extraId: string) => {
-    setSelectedExtras((prev) =>
-      prev.includes(extraId)
-        ? prev.filter((id) => id !== extraId)
-        : [...prev, extraId],
-    );
+  const handleCategoryChange = (nextCategoryId: string) => {
+    setCategoryId(nextCategoryId);
+  };
+
+  const resolveSortOrder = () => {
+    if (editing) {
+      if (editing.categoryId === categoryId) {
+        return editing.sortOrder;
+      }
+      const inCategory = items.filter(
+        (p) => p.categoryId === categoryId && p.id !== editing.id,
+      );
+      return getSortOrderForEnd(inCategory);
+    }
+    const inCategory = items.filter((p) => p.categoryId === categoryId);
+    return getSortOrderForEnd(inCategory);
   };
 
   const handleSubmit = async (e: FormEvent) => {
@@ -125,9 +138,10 @@ export default function ProductosPage() {
         description: description || undefined,
         price: parseFloat(price),
         imageUrl: imageUrl.trim() || undefined,
-        sortOrder: parseInt(sortOrder, 10),
+        sortOrder: resolveSortOrder(),
         isActive,
-        extraIds: selectedExtras,
+        trackStock,
+        stockQuantity: trackStock ? parseInt(stockQuantity, 10) || 0 : 0,
       };
       if (editing) {
         await updateProduct(editing.id, data);
@@ -143,13 +157,29 @@ export default function ProductosPage() {
     }
   };
 
-  const handleDelete = async (item: Product) => {
-    if (!confirm(`¿Eliminar producto "${item.name}"?`)) return;
+  const openDelete = (item: Product) => {
+    setDeleteTarget(item);
+    setDeleteError('');
+  };
+
+  const closeDelete = () => {
+    if (deleteLoading) return;
+    setDeleteTarget(null);
+    setDeleteError('');
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleteLoading(true);
+    setDeleteError('');
     try {
-      await deleteProduct(item.id);
+      await deleteProduct(deleteTarget.id);
+      closeDelete();
       await load();
     } catch (err) {
-      alert(getErrorMessage(err));
+      setDeleteError(getErrorMessage(err));
+    } finally {
+      setDeleteLoading(false);
     }
   };
 
@@ -181,7 +211,6 @@ export default function ProductosPage() {
             <CrudTh>Producto</CrudTh>
             <CrudTh>Categoría</CrudTh>
             <CrudTh>Precio</CrudTh>
-            <CrudTh>Extras</CrudTh>
             <CrudTh>Estado</CrudTh>
             <CrudTh className="text-right">Acciones</CrudTh>
           </CrudThead>
@@ -215,19 +244,12 @@ export default function ProductosPage() {
                   </span>
                 </CrudTd>
                 <CrudTd>
-                  <span className="text-text-secondary text-xs font-medium">
-                    {item.extras?.length
-                      ? item.extras.map((e) => e.name).join(', ')
-                      : '—'}
-                  </span>
-                </CrudTd>
-                <CrudTd>
                   <Badge active={item.isActive} />
                 </CrudTd>
                 <CrudTd>
                   <CrudActions
                     onEdit={() => openEdit(item)}
-                    onDelete={() => handleDelete(item)}
+                    onDelete={() => openDelete(item)}
                   />
                 </CrudTd>
               </CrudTr>
@@ -242,108 +264,160 @@ export default function ProductosPage() {
         title={editing ? 'Editar producto' : 'Nuevo producto'}
       >
         <form onSubmit={handleSubmit} className="space-y-4">
-          <Select
-            label="Categoría"
-            value={categoryId}
-            onChange={(e) => setCategoryId(e.target.value)}
-            required
-          >
-            <option value="">Seleccionar...</option>
-            {categories.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </Select>
-          <Input
-            label="Nombre"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
-          />
-          <div>
-            <label className="block text-sm font-semibold text-foreground mb-1.5">
-              Descripción
-            </label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              rows={2}
-              className="w-full px-4 py-3 border border-border rounded-xl focus:ring-2 focus:ring-primary/30 focus:border-primary outline-none text-sm bg-card text-foreground"
+          <div className="grid grid-cols-1 items-start gap-4 sm:grid-cols-2">
+            <Select
+              label="Categoría"
+              value={categoryId}
+              onChange={(e) => handleCategoryChange(e.target.value)}
+              required
+            >
+              <option value="">Seleccionar...</option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </Select>
+            <Input
+              label="Nombre"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
             />
           </div>
-          <Input
-            label="Precio (Bs.)"
-            type="number"
-            min={0}
-            step="0.5"
-            value={price}
-            onChange={(e) => setPrice(e.target.value)}
-            required
-          />
-          <div>
+          <div className="grid grid-cols-1 items-start gap-4 sm:grid-cols-2">
+            <Input
+              label="Precio (Bs.)"
+              type="number"
+              min={0}
+              step="0.5"
+              value={price}
+              onChange={(e) => setPrice(e.target.value)}
+              required
+            />
+            <div>
+              <label className="mb-1.5 block text-sm font-semibold text-foreground">
+                Descripción
+              </label>
+              <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                rows={1}
+                className="w-full min-h-[46px] resize-none rounded-xl border border-border bg-card px-4 py-3 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-primary/30"
+              />
+            </div>
+          </div>
+          <div className="rounded-xl border border-border bg-background/50 px-4 py-3">
             <ImageUploadField
               label="Imagen del producto"
               value={imageUrl}
               onChange={setImageUrl}
               onUpload={uploadProductImage}
+              compact
               preview={
-                <div className="max-w-[180px]">
-                  <ProductImage
-                    src={imageUrl}
-                    alt={name || 'Vista previa'}
-                    aspect="video"
-                  />
-                </div>
+                <ProductImage
+                  src={imageUrl}
+                  alt={name || 'Vista previa'}
+                  aspect="square"
+                  className="size-16"
+                />
               }
             />
           </div>
-          <Input
-            label="Orden"
-            type="number"
-            min={0}
-            value={sortOrder}
-            onChange={(e) => setSortOrder(e.target.value)}
-          />
-          {extras.length > 0 && (
-            <div>
-              <label className="block text-sm font-semibold text-foreground mb-1">
-                Extras en el producto
-              </label>
-              <p className="text-xs text-text-secondary mb-2">
-                Salsas y complementos que el cliente elige al pedir este producto.
-                Para porciones aparte, créalas en Productos → categoría Salsas aparte.
-              </p>
-              <div className="space-y-2 max-h-36 overflow-y-auto border border-border rounded-xl p-3 bg-background">
-                {extras.map((extra) => (
-                  <label
-                    key={extra.id}
-                    className="flex items-center gap-2.5 text-sm text-foreground cursor-pointer"
-                  >
-                    <input
-                      type="checkbox"
-                      checked={selectedExtras.includes(extra.id)}
-                      onChange={() => toggleExtra(extra.id)}
-                      className="rounded border-border text-primary focus:ring-primary/30"
-                    />
-                    <span className="font-medium">{extra.name}</span>
-                    {extra.price > 0 && (
-                      <span className="text-text-secondary text-xs font-bold">
-                        (+{formatPrice(extra.price)})
-                      </span>
-                    )}
-                  </label>
-                ))}
-              </div>
+          <div className="grid grid-cols-1 gap-4 rounded-xl border border-border bg-background/50 px-4 py-3 sm:grid-cols-2">
+            <ActiveCheckbox checked={isActive} onChange={setIsActive} />
+            <ActiveCheckbox
+              checked={trackStock}
+              onChange={setTrackStock}
+              label="Controlar inventario"
+            />
+          </div>
+          {trackStock && (
+            <div className="max-w-xs">
+              <Input
+                label="Unidades en stock"
+                type="number"
+                min={0}
+                step={1}
+                value={stockQuantity}
+                onChange={(e) => setStockQuantity(e.target.value)}
+                required
+              />
             </div>
           )}
-          <ActiveCheckbox checked={isActive} onChange={setIsActive} />
           {error && <FormError message={error} />}
           <FormActions
             saving={saving}
             onCancel={() => setModalOpen(false)}
           />
         </form>
+      </Modal>
+
+      <Modal
+        open={!!deleteTarget}
+        onClose={closeDelete}
+        title="Eliminar producto"
+      >
+        {deleteTarget && (
+          <div className="space-y-4">
+            <Card padding="sm" className="bg-red-950/30 border-red-800/50">
+              <p className="text-sm text-red-200 font-medium leading-relaxed">
+                Vas a quitar{' '}
+                <strong className="text-red-100">{deleteTarget.name}</strong>{' '}
+                del menú. Dejará de aparecer en el POS y en el menú público. Los
+                pedidos anteriores conservan el nombre del producto.
+              </p>
+            </Card>
+
+            <div className="flex gap-3 rounded-xl border border-border bg-background p-3">
+              <ProductImage
+                src={deleteTarget.imageUrl}
+                alt={deleteTarget.name}
+                aspect="square"
+                className="w-16 shrink-0"
+              />
+              <div className="min-w-0 flex-1">
+                <p className="font-bold text-foreground truncate">
+                  {deleteTarget.name}
+                </p>
+                <p className="text-xs text-text-secondary mt-0.5">
+                  {deleteTarget.categoryName}
+                </p>
+                <p className="text-sm font-bold text-primary mt-1">
+                  {formatPrice(deleteTarget.price)}
+                </p>
+                <div className="mt-2">
+                  <Badge active={deleteTarget.isActive} />
+                </div>
+              </div>
+            </div>
+
+            <p className="text-xs text-text-secondary">
+              Si solo quieres ocultarlo temporalmente, cancela y desmarca
+              &quot;Activo&quot; al editar el producto.
+            </p>
+
+            {deleteError && <FormError message={deleteError} />}
+
+            <div className="flex gap-2 pt-1">
+              <Button
+                variant="danger"
+                onClick={confirmDelete}
+                disabled={deleteLoading}
+                className="flex-1"
+              >
+                {deleteLoading ? 'Eliminando...' : 'Eliminar producto'}
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={closeDelete}
+                disabled={deleteLoading}
+              >
+                Cancelar
+              </Button>
+            </div>
+          </div>
+        )}
       </Modal>
     </div>
   );

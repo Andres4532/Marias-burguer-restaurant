@@ -1,0 +1,38 @@
+QUE HACER EN TU PC ANTES DE QUE TRAIGAN LA LAP
+==============================================
+
+1. PROBAR TODO EL FLUJO (30-45 min)
+   - npm run dev
+   - Login jefa y cajera
+   - POS: pedido y cobro
+   - Menu publico en otra pestana -> Entrantes -> Cobrar
+   - Cambiar slug/nombre en Configuracion (anota el slug final)
+
+2. COMPILAR SIN ERRORES
+   npm run build
+
+3. PREPARAR PAQUETE PARA LA LAP (USB o ZIP)
+   Incluir: todo el proyecto EXCEPTO node_modules y apps\api\uploads si son pruebas
+   Incluir SIEMPRE: package-lock.json, apps\api\prisma\migrations, scripts\
+
+4. LLEVAR EN EL USB (opcional pero ahorra tiempo)
+   - Instalador Node 20 LTS (nodejs.org)
+   - Instalador Docker Desktop
+   - Este proyecto (ZIP o carpeta)
+
+5. EN TU PC: ejecutar una vez el script de instalacion para verificar
+   powershell -ExecutionPolicy Bypass -File scripts\instalar-lap.ps1
+   (Puedes hacerlo en una carpeta copia si no quieres tocar tu .env)
+
+6. ANOTAR PARA EL DIA D (papel o WhatsApp)
+   - Slug del menu: _______________
+   - URL panel: http://localhost:3000/login
+   - URL menu: http://localhost:3000/menu/_______________
+   - Recordatorio: cambiar password123 despues del primer login
+
+7. NO HACER
+   - No copiar tu apps\api\.env con secretos de produccion si no aplica
+   - No copiar node_modules (muy pesado; npm install en la lap)
+
+DIA EN LA LAP (resumen)
+   Instalar Node + Docker -> copiar proyecto -> instalar-lap.ps1 -> npm run dev

@@ -46,6 +46,15 @@ export class CreateProductDto {
   isActive?: boolean;
 
   @IsOptional()
+  @IsBoolean()
+  trackStock?: boolean;
+
+  @IsOptional()
+  @IsInt()
+  @Min(0)
+  stockQuantity?: number;
+
+  @IsOptional()
   @IsArray()
   @IsString({ each: true })
   extraIds?: string[];

@@ -19,7 +19,7 @@ const cajeraLinks: QuickLink[] = [
   {
     href: '/pos',
     title: 'Nuevo pedido',
-    description: 'Mesa, para llevar o delivery',
+    description: 'Mesa, para recojo o delivery',
     icon: 'pos',
     highlight: true,
   },
@@ -54,16 +54,16 @@ const jefaAdminLinks: QuickLink[] = [
     icon: 'productos',
   },
   {
+    href: '/orden-menu',
+    title: 'Orden del menú',
+    description: 'Posición de productos en el catálogo',
+    icon: 'ordenMenu',
+  },
+  {
     href: '/categorias',
     title: 'Categorías',
     description: 'Organizar el catálogo',
     icon: 'categorias',
-  },
-  {
-    href: '/extras',
-    title: 'Extras',
-    description: 'Salsas y complementos',
-    icon: 'extras',
   },
   {
     href: '/usuarios',

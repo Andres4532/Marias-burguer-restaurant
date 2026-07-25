@@ -1,4 +1,12 @@
-import { IsNumber, IsOptional, Min, ValidateIf, IsIn } from 'class-validator';
+import {
+  IsNumber,
+  IsOptional,
+  IsString,
+  MaxLength,
+  Min,
+  ValidateIf,
+  IsIn,
+} from 'class-validator';
 import { PaymentMethod } from '@prisma/client';
 
 const ALLOWED_PAYMENT_METHODS = [
@@ -16,4 +24,19 @@ export class CreatePaymentDto {
   @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0.01)
   amountReceived?: number;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(20)
+  billingNit?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  billingBusinessName?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(20)
+  billingComplement?: string;
 }

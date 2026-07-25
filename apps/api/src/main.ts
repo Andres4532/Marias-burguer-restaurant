@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, Logger } from '@nestjs/common';
 import { NestExpressApplication } from '@nestjs/platform-express';
+import helmet from 'helmet';
 import { AppModule } from './app.module';
 import { getUploadRootDir } from './uploads/uploads.config';
 
@@ -33,12 +34,23 @@ async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
   const logger = new Logger('Bootstrap');
 
+  const trustProxy = process.env.TRUST_PROXY;
+  if (trustProxy === 'true' || trustProxy === '1') {
+    app.set('trust proxy', 1);
+  }
+
   const uploadDir = process.env.UPLOAD_DIR ?? getUploadRootDir();
   app.useStaticAssets(uploadDir, {
     prefix: '/api/v1/uploads/files/',
   });
 
   app.setGlobalPrefix('api/v1');
+
+  app.use(
+    helmet({
+      crossOriginResourcePolicy: { policy: 'cross-origin' },
+    }),
+  );
 
   app.enableCors({
     origin: parseCorsOrigins(),

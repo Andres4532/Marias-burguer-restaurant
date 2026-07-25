@@ -12,6 +12,7 @@ interface ImageUploadFieldProps {
   onUpload: (file: File) => Promise<string>;
   preview: ReactNode;
   hint?: string;
+  compact?: boolean;
 }
 
 export function ImageUploadField({
@@ -21,6 +22,7 @@ export function ImageUploadField({
   onUpload,
   preview,
   hint = 'JPG, PNG o WebP. Máximo 5 MB.',
+  compact = false,
 }: ImageUploadFieldProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -43,47 +45,58 @@ export function ImageUploadField({
     }
   };
 
-  return (
-    <div className="space-y-3">
-      <div>
-        <p className="block text-sm font-semibold text-foreground mb-1.5">
-          {label}
-        </p>
-        <div className="flex flex-wrap items-center gap-2">
-          <input
-            ref={inputRef}
-            type="file"
-            accept="image/jpeg,image/png,image/webp"
-            className="hidden"
-            onChange={handleFileChange}
-          />
+  const controls = (
+    <>
+      <div className="flex flex-wrap items-center gap-2">
+        <input
+          ref={inputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          className="hidden"
+          onChange={handleFileChange}
+        />
+        <Button
+          type="button"
+          variant="secondary"
+          size="sm"
+          disabled={uploading}
+          onClick={() => inputRef.current?.click()}
+        >
+          {uploading ? 'Subiendo...' : value ? 'Cambiar imagen' : 'Subir imagen'}
+        </Button>
+        {value && (
           <Button
             type="button"
-            variant="secondary"
+            variant="ghost"
             size="sm"
             disabled={uploading}
-            onClick={() => inputRef.current?.click()}
+            onClick={() => onChange('')}
           >
-            {uploading ? 'Subiendo...' : value ? 'Cambiar imagen' : 'Subir imagen'}
+            Quitar
           </Button>
-          {value && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              disabled={uploading}
-              onClick={() => onChange('')}
-            >
-              Quitar
-            </Button>
-          )}
-        </div>
-        <p className="text-xs text-text-secondary mt-1.5">{hint}</p>
+        )}
       </div>
+      <p className="mt-1.5 text-xs text-text-secondary">{hint}</p>
+    </>
+  );
+
+  return (
+    <div className={compact ? 'space-y-2' : 'space-y-3'}>
+      <p className="block text-sm font-semibold text-foreground">{label}</p>
+
+      {compact ? (
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0 flex-1">{controls}</div>
+          <div className="shrink-0 pt-0.5">{preview}</div>
+        </div>
+      ) : (
+        <>
+          {controls}
+          <div>{preview}</div>
+        </>
+      )}
 
       {uploadError && <FormError message={uploadError} />}
-
-      <div>{preview}</div>
     </div>
   );
 }

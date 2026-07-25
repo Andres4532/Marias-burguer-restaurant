@@ -79,6 +79,8 @@ model Product {
   isActive    Boolean   @default(true)
   deletedAt   DateTime?
   sortOrder   Int       @default(0)
+  trackStock  Boolean   @default(false)
+  stockQuantity Int     @default(0)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
@@ -190,6 +192,9 @@ model Payment {
   status      PaymentStatus @default(PAGADO)
   paidAt      DateTime      @default(now())
   createdById String
+  billingNit            String?
+  billingBusinessName   String?
+  billingComplement     String?
   createdBy   User          @relation(fields: [createdById], references: [id])
 
   order Order @relation(fields: [orderId], references: [id])

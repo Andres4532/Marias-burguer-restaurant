@@ -2,11 +2,9 @@ import { apiFetch, parseApiError } from './api-client';
 import { getToken } from './auth';
 import type {
   Category,
-  Extra,
   Product,
-  CatalogCategory,
+  CatalogResponse,
   CreateCategoryInput,
-  CreateExtraInput,
   CreateProductInput,
 } from '@/types/catalog';
 
@@ -31,23 +29,15 @@ export const deleteCategory = (id: string, removeProducts = false) =>
     token(),
   );
 
-// Extras
-export const getExtras = (all = true) =>
-  apiFetch<Extra[]>(`/extras?all=${all}`, {}, token());
-
-export const createExtra = (data: CreateExtraInput) =>
-  apiFetch<Extra>('/extras', { method: 'POST', body: JSON.stringify(data) }, token());
-
-export const updateExtra = (id: string, data: Partial<CreateExtraInput>) =>
-  apiFetch<Extra>(`/extras/${id}`, { method: 'PATCH', body: JSON.stringify(data) }, token());
-
-export const deleteExtra = (id: string) =>
-  apiFetch<{ message: string }>(`/extras/${id}`, { method: 'DELETE' }, token());
-
 // Products
-export const getProducts = (categoryId?: string, all = true) => {
+export const getProducts = (
+  categoryId?: string,
+  all = true,
+  trackStockOnly = false,
+) => {
   const params = new URLSearchParams({ all: String(all) });
   if (categoryId) params.set('categoryId', categoryId);
+  if (trackStockOnly) params.set('trackStock', 'true');
   return apiFetch<Product[]>(`/products?${params}`, {}, token());
 };
 
@@ -62,7 +52,7 @@ export const deleteProduct = (id: string) =>
 
 // Catalog (POS)
 export const getCatalog = () =>
-  apiFetch<CatalogCategory[]>('/catalog', {}, token());
+  apiFetch<CatalogResponse>('/catalog', {}, token());
 
 export function formatPrice(price: number): string {
   return `Bs. ${price.toFixed(2)}`;

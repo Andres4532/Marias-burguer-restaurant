@@ -1,8 +1,10 @@
 'use client';
 
-import { useState, FormEvent } from 'react';
+import { useState, FormEvent, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { login } from '@/lib/auth';
+import { parseApiError } from '@/lib/api-client';
+import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Card';
@@ -11,11 +13,18 @@ import { useRestaurantBranding } from '@/hooks/useRestaurantBranding';
 
 export default function LoginPage() {
   const router = useRouter();
+  const { user, loading: authLoading } = useAuth();
   const branding = useRestaurantBranding();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!authLoading && user) {
+      router.replace('/dashboard');
+    }
+  }, [authLoading, user, router]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -26,15 +35,19 @@ export default function LoginPage() {
       await login(email, password);
       router.push('/dashboard');
     } catch (err: unknown) {
-      const message =
-        err && typeof err === 'object' && 'message' in err
-          ? String((err as { message: string | string[] }).message)
-          : 'Error al iniciar sesión';
-      setError(Array.isArray(message) ? message[0] : message);
+      setError(parseApiError(err));
     } finally {
       setLoading(false);
     }
   };
+
+  if (authLoading || user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <p className="text-text-secondary font-medium">Cargando...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4 py-10">

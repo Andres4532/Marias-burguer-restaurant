@@ -1,14 +1,15 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ExtraModal } from '@/components/pos/ExtraModal';
 import { CartPanel } from '@/components/pos/CartPanel';
 import { MobileCartBar, MobileCartDrawer } from '@/components/pos/MobileCartDrawer';
 import { Input } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Card';
 import { FilterChip } from '@/components/ui/FilterChip';
 import { FormError } from '@/components/ui/CrudForm';
+import { Modal } from '@/components/ui/Modal';
+import { Button } from '@/components/ui/Button';
 import { useCart } from '@/hooks/useCart';
 import {
   getPublicMenu,
@@ -20,13 +21,18 @@ import { isDeliveryLocationComplete } from '@/lib/maps';
 import { ProductImage } from '@/components/ui/ProductImage';
 import { RestaurantLogo } from '@/components/layout/RestaurantLogo';
 import { formatPrice } from '@/lib/catalog';
+import {
+  canAddOneToCart,
+  isOutOfStock,
+  maxQuantityForCartLine,
+} from '@/lib/inventory';
 import type { CatalogCategory } from '@/types/catalog';
-import type { OrderType } from '@/types/orders';
+import { ORDER_TYPE_LABELS, type OrderType } from '@/types/orders';
 
 type CatalogProduct = CatalogCategory['products'][number];
 
 const ORDER_TYPES: Array<{ value: OrderType; label: string }> = [
-  { value: 'PARA_LLEVAR', label: '🥡 Para llevar' },
+  { value: 'PARA_LLEVAR', label: '🥡 Para recojo' },
   { value: 'DELIVERY', label: '🛵 Delivery' },
 ];
 
@@ -42,7 +48,6 @@ export default function PublicMenuPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
-  const [extraModalProduct, setExtraModalProduct] = useState<CatalogProduct | null>(null);
   const [cartOpen, setCartOpen] = useState(false);
   const [customerName, setCustomerName] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
@@ -51,6 +56,7 @@ export default function PublicMenuPage() {
   const [deliveryLatitude, setDeliveryLatitude] = useState<number | null>(null);
   const [deliveryLongitude, setDeliveryLongitude] = useState<number | null>(null);
   const [orderType, setOrderType] = useState<OrderType>('PARA_LLEVAR');
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const loadMenu = useCallback(async () => {
     setLoading(true);
@@ -74,32 +80,47 @@ export default function PublicMenuPage() {
     loadMenu();
   }, [loadMenu]);
 
-  const handleProductClick = (product: CatalogProduct) => {
-    if (product.extras.length > 0) {
-      setExtraModalProduct(product);
-    } else {
-      cart.addItem(product, []);
+  const productById = useMemo(() => {
+    const map = new Map<string, CatalogProduct>();
+    for (const cat of catalog) {
+      for (const p of cat.products) map.set(p.id, p);
     }
+    return map;
+  }, [catalog]);
+
+  const getMaxQuantity = useCallback(
+    (item: { key: string; productId: string }) => {
+      const product = productById.get(item.productId);
+      if (!product) return Number.POSITIVE_INFINITY;
+      return maxQuantityForCartLine(product, cart.items, item.key);
+    },
+    [productById, cart.items],
+  );
+
+  const handleProductClick = (product: CatalogProduct) => {
+    if (isOutOfStock(product)) {
+      setError(`"${product.name}" no está disponible por ahora`);
+      return;
+    }
+    if (!canAddOneToCart(product, cart.items)) {
+      setError(`No puedes agregar más unidades de "${product.name}"`);
+      return;
+    }
+    setError('');
+    cart.addItem(product, []);
   };
 
-  const handleConfirmExtras = (
-    product: CatalogProduct,
-    extras: Array<{ id: string; name: string; price: number }>,
-  ) => {
-    cart.addItem(product, extras);
-  };
-
-  const handleSubmit = async () => {
+  const validateBeforeSubmit = (): boolean => {
     setError('');
 
     if (!customerName.trim()) {
       setError('Ingresa tu nombre');
-      return;
+      return false;
     }
 
     if (!customerPhone.trim() || customerPhone.trim().length < 6) {
       setError('Ingresa un teléfono válido');
-      return;
+      return false;
     }
 
     if (orderType === 'DELIVERY') {
@@ -111,12 +132,26 @@ export default function PublicMenuPage() {
         )
       ) {
         setError('Marca tu ubicación en el mapa o ingresa la dirección');
-        return;
+        return false;
       }
     }
 
     if (cart.items.length === 0) {
       setError('Agrega al menos un producto');
+      return false;
+    }
+
+    return true;
+  };
+
+  const handleSubmitClick = () => {
+    if (!validateBeforeSubmit()) return;
+    setConfirmOpen(true);
+  };
+
+  const handleConfirmSubmit = async () => {
+    if (!validateBeforeSubmit()) {
+      setConfirmOpen(false);
       return;
     }
 
@@ -144,12 +179,14 @@ export default function PublicMenuPage() {
         items: cart.items.map((item) => ({
           productId: item.productId,
           quantity: item.quantity,
-          extraIds: item.extras.map((e) => e.id),
+          extraIds: item.extras.length ? item.extras.map((e) => e.id) : undefined,
           notes: item.notes,
         })),
       });
       cart.clearCart();
       setCartOpen(false);
+      setConfirmOpen(false);
+      void loadMenu();
       router.push(
         `/menu/${slug}/exito?n=${order.orderNumber}&total=${order.total}`,
       );
@@ -246,7 +283,7 @@ export default function PublicMenuPage() {
           <RestaurantLogo
             name={restaurantName}
             logoUrl={restaurantLogo}
-            subtitle="Pedido en línea · para llevar o delivery"
+            subtitle="Pedido en línea · recojo o delivery"
             size="lg"
           />
         </div>
@@ -274,21 +311,28 @@ export default function PublicMenuPage() {
                 </p>
               </Card>
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                {currentCategory?.products.map((product) => (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 items-stretch">
+                {currentCategory?.products.map((product) => {
+                  const out = isOutOfStock(product);
+                  return (
                   <button
                     key={product.id}
                     type="button"
+                    disabled={out}
                     onClick={() => handleProductClick(product)}
-                    className="bg-card rounded-2xl shadow-sm border border-border overflow-hidden text-left hover:shadow-md hover:border-primary/25 active:scale-[0.98] transition"
+                    className={`flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-card text-left shadow-sm transition ${
+                      out
+                        ? 'opacity-50 cursor-not-allowed'
+                        : 'hover:border-primary/25 hover:shadow-md active:scale-[0.98]'
+                    }`}
                   >
                     <ProductImage
                       src={product.imageUrl}
                       alt={product.name}
-                      aspect="video"
-                      className="rounded-none"
+                      aspect="menu"
+                      className="w-full shrink-0 rounded-none"
                     />
-                    <div className="p-3">
+                    <div className="flex flex-1 flex-col p-3">
                       <p className="font-bold text-foreground text-sm leading-tight">
                         {product.name}
                       </p>
@@ -297,17 +341,18 @@ export default function PublicMenuPage() {
                           {product.description}
                         </p>
                       )}
-                      <p className="text-primary font-extrabold mt-2">
+                      <p className="mt-auto pt-2 text-primary font-extrabold">
                         {formatPrice(product.price)}
                       </p>
-                      {product.extras.length > 0 && (
-                        <p className="text-[10px] font-bold text-text-secondary mt-1 uppercase tracking-wide">
-                          + extras
+                      {out && (
+                        <p className="text-[10px] font-bold text-red-400 mt-2">
+                          Agotado
                         </p>
                       )}
                     </div>
                   </button>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
@@ -319,13 +364,110 @@ export default function PublicMenuPage() {
                 cart={cart}
                 error={error}
                 submitting={submitting}
-                onSubmit={handleSubmit}
+                onSubmit={handleSubmitClick}
                 submitLabel="Enviar pedido"
+                getMaxQuantity={getMaxQuantity}
               />
             </Card>
           </div>
         </div>
       </main>
+
+      <Modal
+        open={confirmOpen}
+        onClose={() => !submitting && setConfirmOpen(false)}
+        title="¿Confirmar pedido?"
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-text-secondary">
+            Revisa los datos antes de enviar tu pedido al restaurante.
+          </p>
+          <div className="rounded-xl border border-border bg-background/50 p-3 text-sm space-y-1">
+            <p>
+              <span className="text-text-secondary">Tipo: </span>
+              <span className="font-semibold text-foreground">
+                {ORDER_TYPE_LABELS[orderType]}
+              </span>
+            </p>
+            <p>
+              <span className="text-text-secondary">Nombre: </span>
+              <span className="font-semibold text-foreground">
+                {customerName.trim()}
+              </span>
+            </p>
+            <p>
+              <span className="text-text-secondary">Teléfono: </span>
+              <span className="font-semibold text-foreground">
+                {customerPhone.trim()}
+              </span>
+            </p>
+            {orderType === 'DELIVERY' && deliveryAddress.trim() && (
+              <p>
+                <span className="text-text-secondary">Dirección: </span>
+                <span className="font-semibold text-foreground">
+                  {deliveryAddress.trim()}
+                </span>
+              </p>
+            )}
+            {orderType === 'DELIVERY' && deliveryReference.trim() && (
+              <p>
+                <span className="text-text-secondary">Referencia: </span>
+                <span className="text-foreground">{deliveryReference.trim()}</span>
+              </p>
+            )}
+          </div>
+          <ul className="space-y-2 text-sm">
+            {cart.items.map((item) => {
+              const unit =
+                item.basePrice +
+                item.extras.reduce((s, e) => s + e.price, 0);
+              return (
+              <li
+                key={item.key}
+                className="flex justify-between gap-3 border-b border-border/60 pb-2 last:border-0 last:pb-0"
+              >
+                <span className="text-foreground">
+                  {item.quantity}× {item.productName}
+                </span>
+                <span className="font-semibold text-foreground shrink-0">
+                  {formatPrice(unit * item.quantity)}
+                </span>
+              </li>
+              );
+            })}
+          </ul>
+          {cart.orderNotes.trim() && (
+            <p className="text-sm">
+              <span className="text-text-secondary">Nota: </span>
+              {cart.orderNotes.trim()}
+            </p>
+          )}
+          <p className="flex justify-between items-center pt-1 text-base font-extrabold text-foreground">
+            <span>Total</span>
+            <span className="text-primary">{formatPrice(cart.subtotal)}</span>
+          </p>
+          {error && <FormError message={error} />}
+          <div className="flex flex-col-reverse sm:flex-row gap-2 pt-2">
+            <Button
+              type="button"
+              variant="secondary"
+              className="sm:flex-1"
+              disabled={submitting}
+              onClick={() => setConfirmOpen(false)}
+            >
+              Volver
+            </Button>
+            <Button
+              type="button"
+              className="sm:flex-1"
+              disabled={submitting}
+              onClick={() => void handleConfirmSubmit()}
+            >
+              {submitting ? 'Enviando…' : 'Sí, enviar pedido'}
+            </Button>
+          </div>
+        </div>
+      </Modal>
 
       <MobileCartBar
         itemCount={cart.itemCount}
@@ -339,17 +481,11 @@ export default function PublicMenuPage() {
         cart={cart}
         error={error}
         submitting={submitting}
-        onSubmit={handleSubmit}
+        onSubmit={handleSubmitClick}
         submitLabel="Enviar pedido"
         header={customerFields}
         wide
-      />
-
-      <ExtraModal
-        product={extraModalProduct}
-        open={!!extraModalProduct}
-        onClose={() => setExtraModalProduct(null)}
-        onConfirm={handleConfirmExtras}
+        getMaxQuantity={getMaxQuantity}
       />
     </div>
   );

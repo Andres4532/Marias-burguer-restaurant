@@ -23,20 +23,29 @@ export function ActiveCheckbox({
   checked,
   onChange,
   label = 'Activo',
+  description,
 }: {
   checked: boolean;
   onChange: (value: boolean) => void;
   label?: string;
+  description?: string;
 }) {
   return (
-    <label className="flex items-center gap-2.5 text-sm font-medium text-foreground cursor-pointer">
+    <label className="flex cursor-pointer items-start gap-2.5">
       <input
         type="checkbox"
         checked={checked}
         onChange={(e) => onChange(e.target.checked)}
-        className="rounded border-border text-primary focus:ring-primary/30"
+        className="mt-0.5 size-4 shrink-0 rounded border-border text-primary focus:ring-primary/30"
       />
-      {label}
+      <span className="min-w-0">
+        <span className="block text-sm font-semibold text-foreground">{label}</span>
+        {description && (
+          <span className="mt-0.5 block text-xs font-normal text-text-secondary leading-snug">
+            {description}
+          </span>
+        )}
+      </span>
     </label>
   );
 }
@@ -67,12 +76,12 @@ export function FormActions({
   submitLabel?: string;
 }) {
   return (
-    <div className="flex gap-2 pt-2">
-      <Button type="submit" disabled={saving}>
-        {saving ? 'Guardando...' : submitLabel}
-      </Button>
-      <Button type="button" variant="secondary" onClick={onCancel}>
+    <div className="flex justify-end gap-2 border-t border-border pt-4">
+      <Button type="button" variant="secondary" onClick={onCancel} disabled={saving}>
         Cancelar
+      </Button>
+      <Button type="submit" disabled={saving} className="min-w-[7rem]">
+        {saving ? 'Guardando...' : submitLabel}
       </Button>
     </div>
   );

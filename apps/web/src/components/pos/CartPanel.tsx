@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { formatPrice } from '@/lib/catalog';
 import { ORDER_TYPE_LABELS } from '@/types/orders';
-import type { useCart } from '@/hooks/useCart';
+import type { useCart, CartItem } from '@/hooks/useCart';
 
 type Cart = ReturnType<typeof useCart>;
 
@@ -14,6 +14,7 @@ interface CartPanelProps {
   submitting?: boolean;
   onSubmit: () => void;
   submitLabel?: string;
+  getMaxQuantity?: (item: CartItem) => number;
 }
 
 export function CartPanel({
@@ -22,6 +23,7 @@ export function CartPanel({
   submitting,
   onSubmit,
   submitLabel = 'Confirmar pedido',
+  getMaxQuantity,
 }: CartPanelProps) {
   return (
     <div className="flex flex-col h-full">
@@ -99,10 +101,19 @@ export function CartPanel({
                     </span>
                     <button
                       type="button"
-                      onClick={() =>
-                        cart.updateQuantity(item.key, item.quantity + 1)
+                      onClick={() => {
+                        const max = getMaxQuantity?.(item);
+                        const next = item.quantity + 1;
+                        if (max != null && Number.isFinite(max) && next > max) {
+                          return;
+                        }
+                        cart.updateQuantity(item.key, next);
+                      }}
+                      disabled={
+                        getMaxQuantity != null &&
+                        item.quantity >= getMaxQuantity(item)
                       }
-                      className="w-9 h-9 rounded-xl bg-primary/10 text-primary font-bold text-lg hover:bg-primary/15 active:scale-95 transition"
+                      className="w-9 h-9 rounded-xl bg-primary/10 text-primary font-bold text-lg hover:bg-primary/15 active:scale-95 transition disabled:opacity-40 disabled:pointer-events-none"
                     >
                       +
                     </button>

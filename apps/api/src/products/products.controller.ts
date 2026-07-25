@@ -26,8 +26,13 @@ export class ProductsController {
   findAll(
     @Query('categoryId') categoryId?: string,
     @Query('all') all?: string,
+    @Query('trackStock') trackStock?: string,
   ) {
-    return this.productsService.findAll(categoryId, all === 'true');
+    return this.productsService.findAll(
+      categoryId,
+      all === 'true',
+      trackStock === 'true',
+    );
   }
 
   @Get(':id')

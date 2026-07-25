@@ -22,6 +22,8 @@ export class ProductsService {
     imageUrl: string | null;
     isActive: boolean;
     sortOrder: number;
+    trackStock: boolean;
+    stockQuantity: number;
     createdAt: Date;
     updatedAt: Date;
     category?: { id: string; name: string };
@@ -44,6 +46,8 @@ export class ProductsService {
       imageUrl: product.imageUrl,
       isActive: product.isActive,
       sortOrder: product.sortOrder,
+      trackStock: product.trackStock,
+      stockQuantity: product.stockQuantity,
       extras: product.extras?.map((pe) => ({
         id: pe.extra.id,
         name: pe.extra.name,
@@ -77,12 +81,17 @@ export class ProductsService {
     }
   }
 
-  async findAll(categoryId?: string, includeInactive = false) {
+  async findAll(
+    categoryId?: string,
+    includeInactive = false,
+    trackStockOnly = false,
+  ) {
     const products = await this.prisma.product.findMany({
       where: {
         deletedAt: null,
         ...(categoryId ? { categoryId } : {}),
         ...(includeInactive ? {} : { isActive: true }),
+        ...(trackStockOnly ? { trackStock: true } : {}),
       },
       orderBy: [{ category: { sortOrder: 'asc' } }, { sortOrder: 'asc' }],
       include: {
@@ -147,6 +156,8 @@ export class ProductsService {
         imageUrl: dto.imageUrl || null,
         sortOrder: dto.sortOrder ?? 0,
         isActive: dto.isActive ?? true,
+        trackStock: dto.trackStock ?? false,
+        stockQuantity: dto.trackStock ? (dto.stockQuantity ?? 0) : 0,
         extras: extraIds.length
           ? {
               create: extraIds.map((extraId) => ({ extraId })),
@@ -192,6 +203,10 @@ export class ProductsService {
       imageUrl:
         rest.imageUrl === '' ? null : rest.imageUrl,
     };
+
+    if (dto.trackStock === false) {
+      productData.stockQuantity = 0;
+    }
 
     if (extraIds !== undefined) {
       await this.validateExtras(extraIds);

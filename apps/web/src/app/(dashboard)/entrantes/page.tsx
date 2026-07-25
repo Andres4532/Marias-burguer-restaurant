@@ -6,6 +6,7 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { StatusBadge } from '@/components/orders/StatusBadge';
+import { DeliveryHandoffButtons } from '@/components/orders/DeliveryHandoffButtons';
 import { useEntrantesAlerts } from '@/components/entrantes/EntrantesAlertsProvider';
 import { getOrders, formatOrderNumber, formatTime } from '@/lib/orders';
 import { formatPrice, getErrorMessage } from '@/lib/catalog';
@@ -145,13 +146,25 @@ export default function EntrantesPage() {
                     · {order.items.length} producto(s)
                   </p>
                 </div>
-                <div className="flex sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-3 shrink-0">
-                  <p className="text-xl font-extrabold text-foreground">
+                  <div className="flex sm:flex-col items-stretch sm:items-end justify-between sm:justify-center gap-2 shrink-0">
+                  <p className="text-xl font-extrabold text-foreground sm:text-right">
                     {formatPrice(order.total)}
                   </p>
-                  <Link href={`/cobro/${order.id}`}>
-                    <Button size="md">Cobrar →</Button>
-                  </Link>
+                  <div className="flex flex-col items-stretch gap-2">
+                    {order.type === 'DELIVERY' && (
+                      <DeliveryHandoffButtons order={order} layout="row" />
+                    )}
+                    <Link href={`/pedidos/${order.id}`}>
+                      <Button variant="secondary" size="md" className="w-full sm:w-auto">
+                        Ver detalle
+                      </Button>
+                    </Link>
+                    <Link href={`/cobro/${order.id}`}>
+                      <Button size="md" className="w-full sm:w-auto">
+                        Cobrar →
+                      </Button>
+                    </Link>
+                  </div>
                 </div>
               </div>
             ))}

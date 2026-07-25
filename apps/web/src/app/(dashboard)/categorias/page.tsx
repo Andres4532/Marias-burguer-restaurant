@@ -31,6 +31,7 @@ import {
   getErrorMessage,
 } from '@/lib/catalog';
 import type { Category, Product } from '@/types/catalog';
+import { getSortOrderForEnd, getMenuPositionRank } from '@/lib/sort-order';
 
 export default function CategoriasPage() {
   const { loading, isJefa } = useRequireJefa();
@@ -47,7 +48,6 @@ export default function CategoriasPage() {
   const [deleteError, setDeleteError] = useState('');
 
   const [name, setName] = useState('');
-  const [sortOrder, setSortOrder] = useState('0');
   const [isActive, setIsActive] = useState(true);
   const [formError, setFormError] = useState('');
 
@@ -70,7 +70,6 @@ export default function CategoriasPage() {
   const openCreate = () => {
     setEditing(null);
     setName('');
-    setSortOrder('0');
     setIsActive(true);
     setFormError('');
     setModalOpen(true);
@@ -79,7 +78,6 @@ export default function CategoriasPage() {
   const openEdit = (item: Category) => {
     setEditing(item);
     setName(item.name);
-    setSortOrder(String(item.sortOrder));
     setIsActive(item.isActive);
     setFormError('');
     setModalOpen(true);
@@ -131,7 +129,7 @@ export default function CategoriasPage() {
     try {
       const data = {
         name,
-        sortOrder: parseInt(sortOrder, 10),
+        sortOrder: editing ? editing.sortOrder : getSortOrderForEnd(items),
         isActive,
       };
       if (editing) {
@@ -157,6 +155,10 @@ export default function CategoriasPage() {
   }
 
   const hasLinkedProducts = linkedProducts.length > 0;
+  const categoryPeers = items.map((c) => ({
+    id: c.id,
+    sortOrder: c.sortOrder,
+  }));
 
   return (
     <div>
@@ -181,19 +183,32 @@ export default function CategoriasPage() {
         <table className="w-full text-sm">
           <CrudThead>
             <CrudTh>Nombre</CrudTh>
-            <CrudTh>Orden</CrudTh>
+            <CrudTh>Posición</CrudTh>
             <CrudTh>Productos</CrudTh>
             <CrudTh>Estado</CrudTh>
             <CrudTh className="text-right">Acciones</CrudTh>
           </CrudThead>
           <tbody>
-            {items.map((item) => (
+            {items.map((item) => {
+              const { rank, total } = getMenuPositionRank(
+                item.sortOrder,
+                categoryPeers,
+                item.id,
+              );
+              return (
               <CrudTr key={item.id}>
                 <CrudTd>
                   <span className="font-bold text-foreground">{item.name}</span>
                 </CrudTd>
                 <CrudTd>
-                  <span className="text-text-secondary font-medium">{item.sortOrder}</span>
+                  <span className="inline-flex flex-col gap-0.5">
+                    <span className="font-bold text-foreground text-xs">
+                      #{rank} de {total}
+                    </span>
+                    <span className="text-[11px] text-text-secondary">
+                      valor {item.sortOrder}
+                    </span>
+                  </span>
                 </CrudTd>
                 <CrudTd>
                   <span className="inline-flex min-w-[2rem] justify-center px-2 py-1 rounded-lg bg-background text-foreground font-bold text-xs">
@@ -210,7 +225,8 @@ export default function CategoriasPage() {
                   />
                 </CrudTd>
               </CrudTr>
-            ))}
+            );
+            })}
           </tbody>
         </table>
       </CrudTable>
@@ -226,13 +242,6 @@ export default function CategoriasPage() {
             value={name}
             onChange={(e) => setName(e.target.value)}
             required
-          />
-          <Input
-            label="Orden"
-            type="number"
-            min={0}
-            value={sortOrder}
-            onChange={(e) => setSortOrder(e.target.value)}
           />
           <ActiveCheckbox
             checked={isActive}

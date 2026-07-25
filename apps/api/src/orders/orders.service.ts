@@ -80,6 +80,9 @@ export class OrdersService {
     amount: { toString(): string };
     paidAt: Date;
     status: string;
+    billingNit: string | null;
+    billingBusinessName: string | null;
+    billingComplement: string | null;
   }>) {
     const paid = payments.find((p) => p.status === 'PAGADO');
     if (!paid) return null;
@@ -88,6 +91,9 @@ export class OrdersService {
       method: paid.method,
       amount: toNumber(paid.amount),
       paidAt: paid.paidAt,
+      billingNit: paid.billingNit,
+      billingBusinessName: paid.billingBusinessName,
+      billingComplement: paid.billingComplement,
     };
   }
 
@@ -123,6 +129,9 @@ export class OrdersService {
       amount: { toString(): string };
       paidAt: Date;
       status: string;
+      billingNit: string | null;
+      billingBusinessName: string | null;
+      billingComplement: string | null;
     }>;
     items: Array<{
       id: string;
@@ -270,14 +279,26 @@ export class OrdersService {
     const productIds = items.map((i) => i.productId);
     const products = await this.prisma.product.findMany({
       where: { id: { in: productIds }, deletedAt: null, isActive: true },
-      include: {
-        extras: { include: { extra: true } },
-      },
     });
 
     if (products.length !== productIds.length) {
       throw new BadRequestException('Uno o más productos no son válidos');
     }
+
+    const allExtraIds = [
+      ...new Set(items.flatMap((item) => item.extraIds ?? [])),
+    ];
+    const extrasInDb =
+      allExtraIds.length > 0
+        ? await this.prisma.extra.findMany({
+            where: {
+              id: { in: allExtraIds },
+              deletedAt: null,
+              isActive: true,
+            },
+          })
+        : [];
+    const extraMap = new Map(extrasInDb.map((e) => [e.id, e]));
 
     const productMap = new Map(products.map((p) => [p.id, p]));
 
@@ -294,24 +315,24 @@ export class OrdersService {
 
     for (const item of items) {
       const product = productMap.get(item.productId)!;
-      const allowedExtraIds = new Set(product.extras.map((pe) => pe.extraId));
       const extraIds = item.extraIds ?? [];
 
       for (const extraId of extraIds) {
-        if (!allowedExtraIds.has(extraId)) {
+        if (!extraMap.has(extraId)) {
           throw new BadRequestException(
-            `El extra no está disponible para ${product.name}`,
+            `El extra seleccionado no está disponible`,
           );
         }
       }
 
-      const selectedExtras = product.extras
-        .filter((pe) => extraIds.includes(pe.extraId))
-        .map((pe) => ({
-          extraId: pe.extra.id,
-          extraName: pe.extra.name,
-          price: toNumber(pe.extra.price),
-        }));
+      const selectedExtras = extraIds.map((extraId) => {
+        const extra = extraMap.get(extraId)!;
+        return {
+          extraId: extra.id,
+          extraName: extra.name,
+          price: toNumber(extra.price),
+        };
+      });
 
       const extrasTotal = selectedExtras.reduce((sum, e) => sum + e.price, 0);
       const unitPrice = toNumber(product.price) + extrasTotal;
@@ -349,6 +370,36 @@ export class OrdersService {
     const { subtotal, itemsData } = await this.buildItemsData(data.items);
 
     const order = await this.prisma.$transaction(async (tx) => {
+      const stockByProduct = new Map<string, number>();
+      for (const item of itemsData) {
+        stockByProduct.set(
+          item.productId,
+          (stockByProduct.get(item.productId) ?? 0) + item.quantity,
+        );
+      }
+
+      for (const [productId, qtyNeeded] of stockByProduct) {
+        const product = await tx.product.findUnique({ where: { id: productId } });
+        if (!product?.trackStock) continue;
+
+        const updated = await tx.product.updateMany({
+          where: {
+            id: productId,
+            trackStock: true,
+            stockQuantity: { gte: qtyNeeded },
+          },
+          data: { stockQuantity: { decrement: qtyNeeded } },
+        });
+
+        if (updated.count === 0) {
+          const current = await tx.product.findUnique({ where: { id: productId } });
+          const left = current?.stockQuantity ?? 0;
+          throw new BadRequestException(
+            `Stock insuficiente: ${product.name} (quedan ${left})`,
+          );
+        }
+      }
+
       const orderNumber = await this.getNextOrderNumber(tx);
 
       return tx.order.create({
@@ -447,11 +498,29 @@ export class OrdersService {
       );
     }
 
-    const updated = await this.prisma.order.update({
-      where: { id },
-      data: { status },
-      include: this.orderInclude,
-    });
+    const updated =
+      status === OrderStatus.CANCELADO
+        ? await this.prisma.$transaction(async (tx) => {
+            const items = await tx.orderItem.findMany({
+              where: { orderId: id },
+            });
+            for (const item of items) {
+              await tx.product.updateMany({
+                where: { id: item.productId, trackStock: true },
+                data: { stockQuantity: { increment: item.quantity } },
+              });
+            }
+            return tx.order.update({
+              where: { id },
+              data: { status },
+              include: this.orderInclude,
+            });
+          })
+        : await this.prisma.order.update({
+            where: { id },
+            data: { status },
+            include: this.orderInclude,
+          });
 
     return this.mapOrder(updated);
   }

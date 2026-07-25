@@ -50,6 +50,10 @@ export default function CobroPage() {
   const [paid, setPaid] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [error, setError] = useState('');
+  const [wantsBilling, setWantsBilling] = useState(false);
+  const [billingNit, setBillingNit] = useState('');
+  const [billingBusinessName, setBillingBusinessName] = useState('');
+  const [billingComplement, setBillingComplement] = useState('');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -96,12 +100,30 @@ export default function CobroPage() {
       }
     }
 
+    if (wantsBilling) {
+      if (!billingNit.trim()) {
+        setError('Ingrese el NIT');
+        return;
+      }
+      if (!billingBusinessName.trim()) {
+        setError('Ingrese la razón social o nombre');
+        return;
+      }
+    }
+
     setPaying(true);
     try {
       const result = await payOrder(
         id,
         method,
         method === 'EFECTIVO' ? parseFloat(amountReceived) : undefined,
+        wantsBilling
+          ? {
+              billingNit,
+              billingBusinessName,
+              billingComplement,
+            }
+          : undefined,
       );
       setOrder(result.order);
       setChange(result.change ?? null);
@@ -139,6 +161,23 @@ export default function CobroPage() {
   if (!order) return null;
 
   const summary = getOrderSummary(order);
+
+  const billingBlock = order.payment?.billingNit ? (
+    <div className="rounded-xl border border-border bg-background p-3 text-sm">
+      <p className="text-xs font-bold uppercase tracking-wide text-text-secondary mb-2">
+        Datos de factura
+      </p>
+      <p className="font-bold text-foreground">
+        {order.payment.billingBusinessName}
+      </p>
+      <p className="text-text-secondary mt-1">
+        NIT: {order.payment.billingNit}
+        {order.payment.billingComplement
+          ? ` · ${order.payment.billingComplement}`
+          : ''}
+      </p>
+    </div>
+  ) : null;
 
   return (
     <>
@@ -222,6 +261,7 @@ export default function CobroPage() {
                       Vuelto: {formatPrice(change)}
                     </p>
                   )}
+                  {billingBlock && <div className="mt-4 text-left">{billingBlock}</div>}
                   <p className="text-green-600 text-xs mt-3 font-bold">
                     Pedido enviado a cocina
                   </p>
@@ -316,6 +356,58 @@ export default function CobroPage() {
                     )}
                   </div>
                 )}
+
+                <div className="rounded-xl border border-border bg-background/50 p-4 space-y-3">
+                  <label className="flex cursor-pointer items-start gap-2.5">
+                    <input
+                      type="checkbox"
+                      checked={wantsBilling}
+                      onChange={(e) => {
+                        setWantsBilling(e.target.checked);
+                        if (!e.target.checked) {
+                          setBillingNit('');
+                          setBillingBusinessName('');
+                          setBillingComplement('');
+                        }
+                      }}
+                      className="mt-0.5 size-4 shrink-0 rounded border-border text-primary focus:ring-primary/30"
+                    />
+                    <span>
+                      <span className="block text-sm font-semibold text-foreground">
+                        Factura con NIT (opcional)
+                      </span>
+                      <span className="mt-0.5 block text-xs text-text-secondary">
+                        Si no la marcas, se cobra como consumidor final.
+                      </span>
+                    </span>
+                  </label>
+
+                  {wantsBilling && (
+                    <div className="space-y-3 border-t border-border pt-3">
+                      <Input
+                        label="NIT"
+                        value={billingNit}
+                        onChange={(e) => setBillingNit(e.target.value)}
+                        placeholder="Ej: 123456789"
+                        autoComplete="off"
+                      />
+                      <Input
+                        label="Razón social / nombre"
+                        value={billingBusinessName}
+                        onChange={(e) => setBillingBusinessName(e.target.value)}
+                        placeholder="Nombre o empresa"
+                        autoComplete="organization"
+                      />
+                      <Input
+                        label="Complemento (opcional)"
+                        value={billingComplement}
+                        onChange={(e) => setBillingComplement(e.target.value)}
+                        placeholder="Ej: 1A"
+                        autoComplete="off"
+                      />
+                    </div>
+                  )}
+                </div>
 
                 {error && (
                   <p className="text-sm text-red-300 bg-red-950/40 border border-red-800/50 px-3 py-2 rounded-xl font-medium">

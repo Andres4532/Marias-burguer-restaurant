@@ -8,22 +8,6 @@ export interface Category {
   updatedAt: string;
 }
 
-export interface Extra {
-  id: string;
-  name: string;
-  price: number;
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface ProductExtra {
-  id: string;
-  name: string;
-  price: number;
-  isActive: boolean;
-}
-
 export interface Product {
   id: string;
   categoryId: string;
@@ -34,9 +18,14 @@ export interface Product {
   imageUrl: string | null;
   isActive: boolean;
   sortOrder: number;
-  extras?: ProductExtra[];
+  trackStock: boolean;
+  stockQuantity: number;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface CatalogResponse {
+  categories: CatalogCategory[];
 }
 
 export interface CatalogCategory {
@@ -50,19 +39,14 @@ export interface CatalogCategory {
     price: number;
     imageUrl: string | null;
     sortOrder: number;
-    extras: Array<{ id: string; name: string; price: number }>;
+    trackStock: boolean;
+    stockQuantity: number;
   }>;
 }
 
 export interface CreateCategoryInput {
   name: string;
   sortOrder?: number;
-  isActive?: boolean;
-}
-
-export interface CreateExtraInput {
-  name: string;
-  price: number;
   isActive?: boolean;
 }
 
@@ -74,5 +58,6 @@ export interface CreateProductInput {
   imageUrl?: string;
   sortOrder?: number;
   isActive?: boolean;
-  extraIds?: string[];
+  trackStock?: boolean;
+  stockQuantity?: number;
 }

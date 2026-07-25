@@ -1,14 +1,9 @@
 import { apiFetch } from './api-client';
 import { getToken } from './auth';
-import type { Order, CreateOrderInput, OrderStatus, PaymentMethod, OrderSource, OrderType } from '@/types/orders';
+import type { Order, CreateOrderInput, OrderStatus, PaymentMethod, OrderSource, OrderType, PayOrderBillingInput, Payment } from '@/types/orders';
 
 export interface PayOrderResponse {
-  payment: {
-    id: string;
-    method: PaymentMethod;
-    amount: number;
-    paidAt: string;
-  };
+  payment: Payment;
   change?: number;
   amountReceived?: number;
   order: Order;
@@ -41,6 +36,7 @@ export const payOrder = (
   id: string,
   method: PaymentMethod,
   amountReceived?: number,
+  billing?: PayOrderBillingInput,
 ) =>
   apiFetch<PayOrderResponse>(
     `/orders/${id}/payments`,
@@ -50,6 +46,13 @@ export const payOrder = (
         method,
         ...(method === 'EFECTIVO' && amountReceived != null
           ? { amountReceived }
+          : {}),
+        ...(billing?.billingNit?.trim()
+          ? {
+              billingNit: billing.billingNit.trim(),
+              billingBusinessName: billing.billingBusinessName?.trim(),
+              billingComplement: billing.billingComplement?.trim() || undefined,
+            }
           : {}),
       }),
     },

@@ -32,6 +32,9 @@ export interface Payment {
   method: PaymentMethod;
   amount: number;
   paidAt: string;
+  billingNit?: string | null;
+  billingBusinessName?: string | null;
+  billingComplement?: string | null;
 }
 
 export interface Order {
@@ -64,6 +67,12 @@ export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
   TARJETA: 'Tarjeta',
 };
 
+export interface PayOrderBillingInput {
+  billingNit?: string;
+  billingBusinessName?: string;
+  billingComplement?: string;
+}
+
 export interface CreateOrderItemInput {
   productId: string;
   quantity: number;
@@ -86,7 +95,7 @@ export interface CreateOrderInput {
 
 export const ORDER_TYPE_LABELS: Record<OrderType, string> = {
   MESA: 'Mesa',
-  PARA_LLEVAR: 'Para llevar',
+  PARA_LLEVAR: 'Para recojo',
   DELIVERY: 'Delivery',
 };
 

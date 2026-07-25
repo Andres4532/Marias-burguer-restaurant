@@ -20,19 +20,21 @@ export function Modal({
         onClick={onClose}
         aria-hidden
       />
-      <div className="relative bg-card rounded-2xl shadow-xl border border-border w-full max-w-md max-h-[90vh] overflow-y-auto">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-border">
+      <div className="relative flex w-full max-w-2xl max-h-[90vh] flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-xl">
+        <div className="flex shrink-0 items-center justify-between border-b border-border px-5 py-3.5">
           <h3 className="font-extrabold text-foreground">{title}</h3>
           <button
             type="button"
             onClick={onClose}
-            className="text-text-secondary hover:text-foreground text-xl leading-none p-1 rounded-lg hover:bg-white/[0.06] transition"
+            className="rounded-lg p-1 text-xl leading-none text-text-secondary transition hover:bg-white/[0.06] hover:text-foreground"
             aria-label="Cerrar"
           >
             ×
           </button>
         </div>
-        <div className="p-5">{children}</div>
+        <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-5 py-4">
+          {children}
+        </div>
       </div>
     </div>
   );

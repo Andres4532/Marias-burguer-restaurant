@@ -1,6 +1,7 @@
 import type { Order } from '@/types/orders';
 import { formatOrderNumber, formatTime } from '@/lib/orders';
 import { ORDER_TYPE_LABELS } from '@/types/orders';
+import { getGoogleMapsUrl, hasDeliveryCoordinates } from '@/lib/maps';
 
 interface KitchenTicketProps {
   order: Order;
@@ -49,6 +50,18 @@ export function KitchenTicket({ order }: KitchenTicketProps) {
             {order.deliveryReference && (
               <p className="ticket-delivery-line">
                 <strong>Ref:</strong> {order.deliveryReference}
+              </p>
+            )}
+            {hasDeliveryCoordinates(
+              order.deliveryLatitude,
+              order.deliveryLongitude,
+            ) && (
+              <p className="ticket-delivery-line">
+                <strong>Maps:</strong>{' '}
+                {getGoogleMapsUrl(
+                  order.deliveryLatitude!,
+                  order.deliveryLongitude!,
+                )}
               </p>
             )}
           </div>

@@ -25,9 +25,15 @@ export function ProductImage({
   src?: string | null;
   alt: string;
   className?: string;
-  aspect?: 'square' | 'video';
+  /** video 16:9, square 1:1, menu 3:4 (tarjetas del catálogo) */
+  aspect?: 'square' | 'video' | 'menu';
 }) {
-  const aspectClass = aspect === 'square' ? 'aspect-square' : 'aspect-video';
+  const aspectClass =
+    aspect === 'square'
+      ? 'aspect-square'
+      : aspect === 'menu'
+        ? 'aspect-[3/4]'
+        : 'aspect-video';
 
   if (src?.trim()) {
     return (

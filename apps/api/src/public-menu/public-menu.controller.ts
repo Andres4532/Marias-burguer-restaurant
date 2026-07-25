@@ -2,6 +2,7 @@ import { Controller, Get, Post, Body, Param, Req } from '@nestjs/common';
 import type { Request } from 'express';
 import { PublicMenuService } from './public-menu.service';
 import { CreatePublicOrderDto } from '../orders/dto/create-public-order.dto';
+import { getClientIp } from '../common/utils/client-ip.util';
 
 @Controller('public/menu')
 export class PublicMenuController {
@@ -28,10 +29,7 @@ export class PublicMenuController {
     @Body() dto: CreatePublicOrderDto,
     @Req() req: Request,
   ) {
-    const clientIp =
-      (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ||
-      req.ip ||
-      'unknown';
+    const clientIp = getClientIp(req);
     return this.publicMenuService.createOrder(slug, dto, clientIp);
   }
 }

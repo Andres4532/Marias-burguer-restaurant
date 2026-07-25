@@ -38,6 +38,10 @@ export function setAuth(data: LoginResponse): void {
   localStorage.setItem(USER_KEY, JSON.stringify(data.user));
 }
 
+export function setStoredUser(user: AuthUser): void {
+  localStorage.setItem(USER_KEY, JSON.stringify(user));
+}
+
 export function clearAuth(): void {
   localStorage.removeItem(TOKEN_KEY);
   localStorage.removeItem(USER_KEY);

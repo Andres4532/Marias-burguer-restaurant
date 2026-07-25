@@ -25,6 +25,7 @@ export function parseApiError(error: unknown): string {
   const status = (error as ApiError).statusCode;
   if (status === 401) return 'Sesión expirada. Inicia sesión nuevamente.';
   if (status === 403) return 'No tienes permiso para esta acción.';
+  if (status === 429) return 'Demasiados intentos. Espera unos minutos e intenta de nuevo.';
   if (status === 404) return 'Recurso no encontrado.';
   if (status >= 500) return 'Error del servidor. Intenta de nuevo.';
 

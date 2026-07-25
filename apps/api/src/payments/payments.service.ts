@@ -71,6 +71,8 @@ export class PaymentsService {
         ? Math.round((dto.amountReceived - orderTotal) * 100) / 100
         : undefined;
 
+    const billing = this.normalizeBilling(dto);
+
     const now = new Date();
 
     const result = await this.prisma.$transaction(async (tx) => {
@@ -82,6 +84,9 @@ export class PaymentsService {
           status: PaymentStatus.PAGADO,
           paidAt: now,
           createdById: userId,
+          billingNit: billing.billingNit,
+          billingBusinessName: billing.billingBusinessName,
+          billingComplement: billing.billingComplement,
         },
       });
 
@@ -102,15 +107,58 @@ export class PaymentsService {
     });
 
     return {
-      payment: {
-        id: result.payment.id,
-        method: result.payment.method,
-        amount: toNumber(result.payment.amount),
-        paidAt: result.payment.paidAt,
-      },
+      payment: this.mapPaymentRecord(result.payment),
       change,
       amountReceived: dto.amountReceived,
       order: this.mapOrderWithPayment(result.order),
+    };
+  }
+
+  private normalizeBilling(dto: CreatePaymentDto) {
+    const billingNit = dto.billingNit?.trim() || null;
+    const billingBusinessName = dto.billingBusinessName?.trim() || null;
+    const billingComplement = dto.billingComplement?.trim() || null;
+
+    const hasAny =
+      billingNit || billingBusinessName || billingComplement;
+
+    if (!hasAny) {
+      return {
+        billingNit: null,
+        billingBusinessName: null,
+        billingComplement: null,
+      };
+    }
+
+    if (!billingNit) {
+      throw new BadRequestException('Ingrese el NIT para la factura');
+    }
+    if (!billingBusinessName) {
+      throw new BadRequestException(
+        'Ingrese la razón social o nombre para la factura',
+      );
+    }
+
+    return { billingNit, billingBusinessName, billingComplement };
+  }
+
+  private mapPaymentRecord(payment: {
+    id: string;
+    method: PaymentMethod;
+    amount: { toString(): string };
+    paidAt: Date;
+    billingNit: string | null;
+    billingBusinessName: string | null;
+    billingComplement: string | null;
+  }) {
+    return {
+      id: payment.id,
+      method: payment.method,
+      amount: toNumber(payment.amount),
+      paidAt: payment.paidAt,
+      billingNit: payment.billingNit,
+      billingBusinessName: payment.billingBusinessName,
+      billingComplement: payment.billingComplement,
     };
   }
 
@@ -147,6 +195,9 @@ export class PaymentsService {
       method: PaymentMethod;
       amount: { toString(): string };
       paidAt: Date;
+      billingNit: string | null;
+      billingBusinessName: string | null;
+      billingComplement: string | null;
     }>;
   }) {
     const payment = order.payments[0];
@@ -163,14 +214,7 @@ export class PaymentsService {
       updatedAt: order.updatedAt,
       paidAt: order.paidAt,
       createdBy: order.createdBy,
-      payment: payment
-        ? {
-            id: payment.id,
-            method: payment.method,
-            amount: toNumber(payment.amount),
-            paidAt: payment.paidAt,
-          }
-        : null,
+      payment: payment ? this.mapPaymentRecord(payment) : null,
       items: order.items.map((item) => ({
         id: item.id,
         productId: item.productId,

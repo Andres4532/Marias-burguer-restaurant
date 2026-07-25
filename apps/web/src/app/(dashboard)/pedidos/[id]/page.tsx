@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { StatusBadge } from '@/components/orders/StatusBadge';
 import { DeliveryMapLinks } from '@/components/orders/DeliveryMapLinks';
+import { DeliveryHandoffButtons } from '@/components/orders/DeliveryHandoffButtons';
 import { KitchenTicket, printKitchenTicket } from '@/components/kitchen-ticket/KitchenTicket';
 import { TicketPreviewModal } from '@/components/kitchen-ticket/TicketPreviewModal';
 import {
@@ -167,6 +168,23 @@ export default function PedidoDetallePage() {
               </Card>
             )}
 
+            {order.payment?.billingNit && (
+              <Card padding="sm" className="mb-5 bg-background border-border text-sm">
+                <p className="font-extrabold text-foreground mb-1">
+                  Datos de factura
+                </p>
+                <p className="font-medium text-foreground">
+                  {order.payment.billingBusinessName}
+                </p>
+                <p className="text-text-secondary mt-0.5">
+                  NIT: {order.payment.billingNit}
+                  {order.payment.billingComplement
+                    ? ` · ${order.payment.billingComplement}`
+                    : ''}
+                </p>
+              </Card>
+            )}
+
             <h3 className="font-extrabold text-foreground mb-3">Productos</h3>
             <div className="space-y-3">
               {order.items.map((item) => (
@@ -212,9 +230,14 @@ export default function PedidoDetallePage() {
 
           <Card className="h-fit" padding="lg">
             <h3 className="font-extrabold text-foreground mb-4">Acciones</h3>
-            <div className="space-y-3">
+            <div className="flex flex-col gap-4">
+              {order.type === 'DELIVERY' &&
+                order.status !== 'CANCELADO' && (
+                  <DeliveryHandoffButtons order={order} />
+                )}
+
               {order.status === 'PENDIENTE' && !isPaid && (
-                <Link href={`/cobro/${id}`}>
+                <Link href={`/cobro/${id}`} className="block w-full">
                   <Button className="w-full" size="lg">
                     Cobrar pedido
                   </Button>
