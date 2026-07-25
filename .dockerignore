@@ -1,0 +1,16 @@
+node_modules
+**/node_modules
+apps/web
+apps/web/.next
+.git
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.local
+uploads
+apps/api/uploads
+backups
+*.md
+.cursor
+terminals

@@ -1,7 +1,5 @@
+import { getApiUrl } from './api-url';
 import { getToken } from './auth';
-
-export const API_URL =
-  process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api/v1';
 
 export interface EntranteStreamEvent {
   type: 'new_order' | 'ping';
@@ -21,7 +19,7 @@ export async function subscribeEntrantesStream(
   const token = getToken();
   if (!token) throw new Error('Sin sesión');
 
-  const response = await fetch(`${API_URL}/events/entrantes/stream`, {
+  const response = await fetch(`${getApiUrl()}/events/entrantes/stream`, {
     headers: {
       Authorization: `Bearer ${token}`,
       Accept: 'text/event-stream',

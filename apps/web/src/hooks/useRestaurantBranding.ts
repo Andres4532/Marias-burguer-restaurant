@@ -10,12 +10,23 @@ const FALLBACK: RestaurantBranding = {
 
 export function useRestaurantBranding() {
   const [branding, setBranding] = useState<RestaurantBranding>(FALLBACK);
+  const [apiConnected, setApiConnected] = useState<boolean | null>(null);
 
   useEffect(() => {
     getPublicBranding()
-      .then(setBranding)
-      .catch(() => setBranding(FALLBACK));
+      .then((data) => {
+        setBranding(data);
+        setApiConnected(true);
+      })
+      .catch(() => {
+        setBranding(FALLBACK);
+        setApiConnected(false);
+      });
   }, []);
 
-  return branding;
+  return {
+    name: branding.name,
+    logoUrl: branding.logoUrl,
+    apiConnected,
+  };
 }

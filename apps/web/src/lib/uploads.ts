@@ -1,4 +1,5 @@
-import { API_URL, parseApiError } from './api-client';
+import { getApiUrl } from './api-url';
+import { parseApiError } from './api-client';
 import { getToken } from './auth';
 
 export interface UploadResponse {
@@ -12,7 +13,7 @@ async function uploadImage(file: File, path: string): Promise<string> {
 
   let response: Response;
   try {
-    response = await fetch(`${API_URL}${path}`, {
+    response = await fetch(`${getApiUrl()}${path}`, {
       method: 'POST',
       headers: token ? { Authorization: `Bearer ${token}` } : {},
       body: formData,

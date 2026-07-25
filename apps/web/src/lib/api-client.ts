@@ -1,6 +1,6 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001/api/v1';
+import { getApiUrl } from './api-url';
 
-export { API_URL };
+export { getApiUrl };
 
 export interface ApiError {
   message: string | string[];
@@ -23,6 +23,9 @@ export function parseApiError(error: unknown): string {
   }
 
   const status = (error as ApiError).statusCode;
+  if (status === 0) {
+    return 'No hay conexión con el servidor. Revisa que la API esté en línea y NEXT_PUBLIC_API_URL en Vercel.';
+  }
   if (status === 401) return 'Sesión expirada. Inicia sesión nuevamente.';
   if (status === 403) return 'No tienes permiso para esta acción.';
   if (status === 429) return 'Demasiados intentos. Espera unos minutos e intenta de nuevo.';
@@ -46,9 +49,10 @@ export async function apiFetch<T>(
     headers['Authorization'] = `Bearer ${token}`;
   }
 
+  const base = getApiUrl();
   let response: Response;
   try {
-    response = await fetch(`${API_URL}${path}`, {
+    response = await fetch(`${base}${path}`, {
       ...options,
       headers,
     });

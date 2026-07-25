@@ -14,7 +14,7 @@ import { useRestaurantBranding } from '@/hooks/useRestaurantBranding';
 export default function LoginPage() {
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
-  const branding = useRestaurantBranding();
+  const { name, logoUrl, apiConnected } = useRestaurantBranding();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -54,12 +54,22 @@ export default function LoginPage() {
       <div className="w-full max-w-md">
         <div className="flex justify-center mb-8">
           <RestaurantLogo
-            name={branding.name}
-            logoUrl={branding.logoUrl}
+            name={name}
+            logoUrl={logoUrl}
             subtitle="Inicia sesión para continuar"
             size="lg"
           />
         </div>
+
+        {apiConnected === false && (
+          <div className="mb-4 rounded-xl border border-amber-800/50 bg-amber-950/40 px-4 py-3 text-sm text-amber-100">
+            No se pudo conectar con el servidor. La web en Vercel necesita una API
+            pública: configura{' '}
+            <span className="font-mono text-xs">NEXT_PUBLIC_API_URL</span> (y
+            redeploy) o usa el sistema en la laptop con{' '}
+            <span className="font-mono text-xs">localhost</span>.
+          </div>
+        )}
 
         <Card padding="lg" className="shadow-md shadow-black/[0.04]">
           <form onSubmit={handleSubmit} className="space-y-5">
