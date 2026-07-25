@@ -1,4 +1,4 @@
-# API NestJS — build desde monorepo (Railway / Docker)
+# API NestJS — monorepo (Railway / Docker)
 FROM node:20-bookworm-slim AS builder
 
 RUN apt-get update -y && apt-get install -y openssl ca-certificates && rm -rf /var/lib/apt/lists/*
@@ -27,11 +27,9 @@ COPY package.json package-lock.json ./
 COPY apps/api/package.json ./apps/api/
 COPY apps/api/prisma ./apps/api/prisma
 
-RUN npm ci --omit=dev && npm install prisma@6.9.0 --no-save
-
+# node_modules completo del builder (Prisma CLI + cliente + deps como "effect")
+COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
-COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
-COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 
 WORKDIR /app/apps/api
 
