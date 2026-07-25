@@ -1,6 +1,8 @@
 'use client';
 
 import Image from 'next/image';
+import { useEffect, useState } from 'react';
+import { normalizeMediaUrl } from '@/lib/media-url';
 
 function PlaceholderIcon({ className }: { className?: string }) {
   return (
@@ -28,6 +30,13 @@ export function ProductImage({
   /** video 16:9, square 1:1, menu 3:4 (tarjetas del catálogo) */
   aspect?: 'square' | 'video' | 'menu';
 }) {
+  const resolved = normalizeMediaUrl(src);
+  const [loadFailed, setLoadFailed] = useState(false);
+
+  useEffect(() => {
+    setLoadFailed(false);
+  }, [resolved]);
+
   const aspectClass =
     aspect === 'square'
       ? 'aspect-square'
@@ -35,28 +44,31 @@ export function ProductImage({
         ? 'aspect-[3/4]'
         : 'aspect-video';
 
-  if (src?.trim()) {
+  const showPlaceholder = !resolved || loadFailed;
+
+  if (showPlaceholder) {
     return (
       <div
-        className={`relative overflow-hidden rounded-xl bg-background ${aspectClass} ${className}`}
+        className={`flex items-center justify-center rounded-xl bg-primary/10 text-primary ${aspectClass} ${className}`}
       >
-        <Image
-          src={src}
-          alt={alt}
-          fill
-          className="object-cover"
-          sizes="(max-width: 640px) 50vw, 200px"
-          unoptimized
-        />
+        <PlaceholderIcon className="size-8 opacity-70" />
       </div>
     );
   }
 
   return (
     <div
-      className={`flex items-center justify-center rounded-xl bg-primary/10 text-primary ${aspectClass} ${className}`}
+      className={`relative overflow-hidden rounded-xl bg-background ${aspectClass} ${className}`}
     >
-      <PlaceholderIcon className="size-8 opacity-70" />
+      <Image
+        src={resolved}
+        alt={alt}
+        fill
+        className="object-cover"
+        sizes="(max-width: 640px) 50vw, 200px"
+        unoptimized
+        onError={() => setLoadFailed(true)}
+      />
     </div>
   );
 }

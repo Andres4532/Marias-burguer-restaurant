@@ -18,6 +18,7 @@
     "prisma:seed": "ts-node prisma/seed.ts",
     "catalog:clear": "ts-node prisma/clear-catalog.ts",
     "catalog:camis-burgers": "ts-node prisma/import-camis-burgers.ts",
+    "catalog:reset-camis-burgers": "ts-node prisma/reset-camis-burgers-menu.ts",
     "catalog:camis-bebidas": "ts-node prisma/import-camis-bebidas.ts",
     "catalog:camis-especialidades": "ts-node prisma/import-camis-especialidades.ts",
     "prisma:studio": "prisma studio",

@@ -14,9 +14,10 @@ export class UploadsService {
   constructor(private readonly config: ConfigService) {
     this.uploadDir = this.config.get<string>('UPLOAD_DIR') ?? getUploadRootDir();
     const port = this.config.get<string>('API_PORT') ?? '3001';
-    this.publicUrl =
+    const raw =
       this.config.get<string>('API_PUBLIC_URL') ??
       `http://localhost:${port}`;
+    this.publicUrl = raw.replace(/\/+$/, '');
 
     for (const kind of ['products', 'logos'] as UploadKind[]) {
       getUploadKindDir(kind);

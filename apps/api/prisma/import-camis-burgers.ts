@@ -36,7 +36,7 @@ const BURGERS: Array<{
     sortOrder: 3,
   },
   {
-    name: 'Blue cheese Burger',
+    name: 'Blue chesse Burger',
     description:
       'Carne con mermelada de tocino, cebolla y queso azul con deliciosos pepinillos y tomate.',
     price: 33,
