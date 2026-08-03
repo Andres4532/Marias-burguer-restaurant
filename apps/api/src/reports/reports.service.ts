@@ -12,6 +12,8 @@ import { parseISO } from 'date-fns';
 const MAX_RANGE_DAYS = 93;
 const TOP_PRODUCTS_LIMIT = 10;
 
+type ReportGranularity = 'day' | 'month';
+
 @Injectable()
 export class ReportsService {
   constructor(
@@ -24,6 +26,21 @@ export class ReportsService {
     return this.getRangeReport(dateStr, dateStr);
   }
 
+  async getYearReport(year: number) {
+    const tz = this.timezone.getTimezone();
+    const currentYear = Number(formatInTimeZone(new Date(), tz, 'yyyy'));
+
+    if (year > currentYear) {
+      throw new BadRequestException('No se pueden consultar años futuros');
+    }
+
+    const from = `${year}-01-01`;
+    const { dateStr: today } = this.timezone.getTodayBounds();
+    const to = year === currentYear ? today : `${year}-12-31`;
+
+    return this.buildReport(from, to, 'month', year);
+  }
+
   async getRangeReport(from: string, to: string) {
     if (from > to) {
       throw new BadRequestException('La fecha inicial no puede ser posterior a la final');
@@ -32,10 +49,19 @@ export class ReportsService {
     const dayCount = this.countDaysInclusive(from, to);
     if (dayCount > MAX_RANGE_DAYS) {
       throw new BadRequestException(
-        `El rango máximo es de ${MAX_RANGE_DAYS} días`,
+        `El rango máximo es de ${MAX_RANGE_DAYS} días. Usa el reporte anual para ver todo un año.`,
       );
     }
 
+    return this.buildReport(from, to, 'day');
+  }
+
+  private async buildReport(
+    from: string,
+    to: string,
+    granularity: ReportGranularity,
+    year?: number,
+  ) {
     const { start, end } = this.timezone.getRangeBounds(from, to);
     const tz = this.timezone.getTimezone();
 
@@ -84,20 +110,29 @@ export class ReportsService {
       },
     });
 
-    const salesByDay = new Map<string, { total: number; paidOrders: Set<string> }>();
-    for (const day of this.iterateDays(from, to)) {
-      salesByDay.set(day, { total: 0, paidOrders: new Set() });
+    const periodFormat = granularity === 'month' ? 'yyyy-MM' : 'yyyy-MM-dd';
+    const periods =
+      granularity === 'month'
+        ? this.iterateMonths(from, to)
+        : this.iterateDays(from, to);
+
+    const salesByPeriod = new Map<
+      string,
+      { total: number; paidOrders: Set<string> }
+    >();
+    for (const period of periods) {
+      salesByPeriod.set(period, { total: 0, paidOrders: new Set() });
     }
 
     for (const payment of payments) {
-      const day = formatInTimeZone(payment.paidAt, tz, 'yyyy-MM-dd');
-      const entry = salesByDay.get(day);
+      const period = formatInTimeZone(payment.paidAt, tz, periodFormat);
+      const entry = salesByPeriod.get(period);
       if (!entry) continue;
       entry.total += toNumber(payment.amount);
       entry.paidOrders.add(payment.orderId);
     }
 
-    const dailySeries = Array.from(salesByDay.entries()).map(([date, data]) => ({
+    const series = Array.from(salesByPeriod.entries()).map(([date, data]) => ({
       date,
       total: Math.round(data.total * 100) / 100,
       paidOrderCount: data.paidOrders.size,
@@ -151,19 +186,22 @@ export class ReportsService {
         total: Math.round(p.total * 100) / 100,
       }));
 
-    const isSingleDay = from === to;
+    const isSingleDay = from === to && granularity === 'day';
 
     return {
       from,
       to,
+      year,
       date: isSingleDay ? from : undefined,
       timezone: tz,
+      granularity,
       totalSales: Math.round(totalSales * 100) / 100,
       paidOrderCount: paidOrderIds.size,
       orderCount: ordersInRange,
       pendingOrderCount: pendingOrders,
       byMethod,
-      dailySeries,
+      dailySeries: granularity === 'day' ? series : [],
+      monthlySeries: granularity === 'month' ? series : [],
       topProducts,
     };
   }
@@ -185,5 +223,24 @@ export class ReportsService {
       current = next.toISOString().slice(0, 10);
     }
     return days;
+  }
+
+  private iterateMonths(from: string, to: string): string[] {
+    const months: string[] = [];
+    let year = Number(from.slice(0, 4));
+    let month = Number(from.slice(5, 7));
+    const endYear = Number(to.slice(0, 4));
+    const endMonth = Number(to.slice(5, 7));
+
+    while (year < endYear || (year === endYear && month <= endMonth)) {
+      months.push(`${year}-${String(month).padStart(2, '0')}`);
+      month += 1;
+      if (month > 12) {
+        month = 1;
+        year += 1;
+      }
+    }
+
+    return months;
   }
 }

@@ -1,6 +1,7 @@
 import type { SalesReport } from './reports';
 import {
   formatReportDate,
+  formatReportMonth,
   formatReportPeriod,
 } from './reports';
 
@@ -57,7 +58,7 @@ export async function downloadReportPdf(
   y = writeLine(doc, 'POS Restaurante', y, { size: 10, color: [100, 100, 100] });
   y += 2;
 
-  y = writeLine(doc, `Periodo: ${formatReportPeriod(report.from, report.to)}`, y, {
+  y = writeLine(doc, `Periodo: ${formatReportPeriod(report.from, report.to, report.year)}`, y, {
     bold: true,
   });
   y = writeLine(doc, `Zona horaria: ${report.timezone}`, y);
@@ -91,7 +92,18 @@ export async function downloadReportPdf(
     y += 4;
   }
 
-  if (report.dailySeries.length > 1) {
+  const monthSeries = report.monthlySeries ?? [];
+  if (monthSeries.length > 0) {
+    y = writeLine(doc, 'VENTAS POR MES', y, { size: 12, bold: true });
+    for (const month of monthSeries) {
+      y = writeLine(
+        doc,
+        `- ${formatReportMonth(month.date)}: ${formatPrice(month.total)} (${month.paidOrderCount} pedido${month.paidOrderCount !== 1 ? 's' : ''})`,
+        y,
+      );
+    }
+    y += 4;
+  } else if (report.dailySeries.length > 1) {
     y = writeLine(doc, 'VENTAS POR DIA', y, { size: 12, bold: true });
     for (const day of report.dailySeries) {
       y = writeLine(

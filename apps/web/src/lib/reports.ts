@@ -5,8 +5,10 @@ import type { PaymentMethod } from '@/types/orders';
 export interface SalesReport {
   from: string;
   to: string;
+  year?: number;
   date?: string;
   timezone: string;
+  granularity?: 'day' | 'month';
   totalSales: number;
   paidOrderCount: number;
   orderCount: number;
@@ -17,6 +19,11 @@ export interface SalesReport {
     count: number;
   }>;
   dailySeries: Array<{
+    date: string;
+    total: number;
+    paidOrderCount: number;
+  }>;
+  monthlySeries?: Array<{
     date: string;
     total: number;
     paidOrderCount: number;
@@ -52,6 +59,23 @@ export function getMonthStart(dateStr: string): string {
   return `${y}-${m}-01`;
 }
 
+export function getCurrentYear(dateStr = getTodayInTz()): number {
+  return Number(dateStr.slice(0, 4));
+}
+
+export function formatReportMonth(monthStr: string): string {
+  const [year, month] = monthStr.split('-');
+  const label = new Date(Number(year), Number(month) - 1, 1).toLocaleDateString(
+    'es-BO',
+    { month: 'short', year: 'numeric' },
+  );
+  return label.charAt(0).toUpperCase() + label.slice(1);
+}
+
+export function formatReportYear(year: number): string {
+  return String(year);
+}
+
 function formatYmd(date: Date): string {
   const y = date.getFullYear();
   const m = String(date.getMonth() + 1).padStart(2, '0');
@@ -68,7 +92,8 @@ export function formatReportDate(dateStr: string): string {
   });
 }
 
-export function formatReportPeriod(from: string, to: string): string {
+export function formatReportPeriod(from: string, to: string, year?: number): string {
+  if (year != null) return `Año ${year}`;
   if (from === to) return formatReportDate(from);
   return `${formatReportDate(from)} — ${formatReportDate(to)}`;
 }
@@ -83,13 +108,16 @@ export const getRangeReport = (from: string, to: string) =>
     getToken(),
   );
 
+export const getYearReport = (year: number) =>
+  apiFetch<SalesReport>(`/reports/year?year=${year}`, {}, getToken());
+
 export function buildReportSummary(
   report: SalesReport,
   formatPrice: (n: number) => string,
 ): string {
   const lines = [
     'REPORTE DE VENTAS — POS Restaurante',
-    `Período: ${formatReportPeriod(report.from, report.to)}`,
+    `Período: ${formatReportPeriod(report.from, report.to, report.year)}`,
     `Zona horaria: ${report.timezone}`,
     '',
     `Total vendido: ${formatPrice(report.totalSales)}`,
@@ -104,7 +132,15 @@ export function buildReportSummary(
     ),
   ];
 
-  if (report.dailySeries.length > 1) {
+  const monthSeries = report.monthlySeries ?? [];
+  if (monthSeries.length > 0) {
+    lines.push('', 'Ventas por mes:');
+    for (const month of monthSeries) {
+      lines.push(
+        `- ${formatReportMonth(month.date)}: ${formatPrice(month.total)} (${month.paidOrderCount} pedido${month.paidOrderCount !== 1 ? 's' : ''})`,
+      );
+    }
+  } else if (report.dailySeries.length > 1) {
     lines.push('', 'Ventas por día:');
     for (const day of report.dailySeries) {
       lines.push(

@@ -21,10 +21,6 @@ export function buildCustomerCookingWhatsAppUrl(
   return `https://wa.me/${normalized}?text=${text}`;
 }
 
-const WHATSAPP_WINDOW_NAME = 'wa_customer_notify';
-
-/** Reutiliza la misma pestaña de WhatsApp en lugar de abrir una nueva cada vez. */
 export function openCustomerWhatsApp(url: string) {
-  const win = window.open(url, WHATSAPP_WINDOW_NAME);
-  win?.focus();
+  window.open(url, '_blank', 'noopener,noreferrer');
 }

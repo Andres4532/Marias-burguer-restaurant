@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRequireJefa } from '@/hooks/useRequireJefa';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
@@ -9,10 +9,12 @@ import { Card } from '@/components/ui/Card';
 import { FilterChip } from '@/components/ui/FilterChip';
 import { SalesChart } from '@/components/reports/SalesChart';
 import {
+  getCurrentYear,
   getRangeReport,
   getTodayInTz,
   getWeekStart,
   getMonthStart,
+  getYearReport,
   formatReportPeriod,
   buildReportSummary,
   type SalesReport,
@@ -21,52 +23,74 @@ import { downloadReportPdf } from '@/lib/export-report-pdf';
 import { formatPrice, getErrorMessage } from '@/lib/catalog';
 import { PAYMENT_METHOD_LABELS } from '@/types/orders';
 
-type Preset = 'today' | 'week' | 'month' | 'custom';
+type Preset = 'today' | 'week' | 'month' | 'year' | 'custom';
 
 const PRESETS: Array<{ key: Preset; label: string }> = [
   { key: 'today', label: 'Hoy' },
   { key: 'week', label: 'Esta semana' },
   { key: 'month', label: 'Este mes' },
+  { key: 'year', label: 'Este año' },
   { key: 'custom', label: 'Personalizado' },
 ];
+
+const FIRST_REPORT_YEAR = 2024;
 
 export default function ReportesPage() {
   const { loading, isJefa } = useRequireJefa();
   const today = getTodayInTz();
+  const currentYear = getCurrentYear(today);
   const [preset, setPreset] = useState<Preset>('today');
   const [from, setFrom] = useState(today);
   const [to, setTo] = useState(today);
+  const [selectedYear, setSelectedYear] = useState(currentYear);
   const [report, setReport] = useState<SalesReport | null>(null);
   const [loadingReport, setLoadingReport] = useState(true);
   const [error, setError] = useState('');
   const [copyMsg, setCopyMsg] = useState('');
 
-  const applyPreset = useCallback((p: Preset) => {
-    const t = getTodayInTz();
-    setPreset(p);
-    if (p === 'today') {
-      setFrom(t);
-      setTo(t);
-    } else if (p === 'week') {
-      setFrom(getWeekStart(t));
-      setTo(t);
-    } else if (p === 'month') {
-      setFrom(getMonthStart(t));
-      setTo(t);
+  const yearOptions = useMemo(() => {
+    const years: number[] = [];
+    for (let year = currentYear; year >= FIRST_REPORT_YEAR; year -= 1) {
+      years.push(year);
     }
-  }, []);
+    return years;
+  }, [currentYear]);
+
+  const applyPreset = useCallback(
+    (p: Preset) => {
+      const t = getTodayInTz();
+      setPreset(p);
+      if (p === 'today') {
+        setFrom(t);
+        setTo(t);
+      } else if (p === 'week') {
+        setFrom(getWeekStart(t));
+        setTo(t);
+      } else if (p === 'month') {
+        setFrom(getMonthStart(t));
+        setTo(t);
+      } else if (p === 'year') {
+        setSelectedYear(getCurrentYear(t));
+      }
+    },
+    [],
+  );
 
   const load = useCallback(async () => {
     setLoadingReport(true);
     setError('');
     try {
-      setReport(await getRangeReport(from, to));
+      if (preset === 'year') {
+        setReport(await getYearReport(selectedYear));
+      } else {
+        setReport(await getRangeReport(from, to));
+      }
     } catch (e) {
       setError(getErrorMessage(e));
     } finally {
       setLoadingReport(false);
     }
-  }, [from, to]);
+  }, [from, to, preset, selectedYear]);
 
   useEffect(() => {
     if (isJefa) load();
@@ -90,6 +114,11 @@ export default function ReportesPage() {
     void downloadReportPdf(report, formatPrice, PAYMENT_METHOD_LABELS);
   };
 
+  const chartSeries =
+    report?.granularity === 'month'
+      ? (report.monthlySeries ?? [])
+      : (report?.dailySeries ?? []);
+
   if (loading || !isJefa) {
     return (
       <div className="flex justify-center py-12">
@@ -104,7 +133,7 @@ export default function ReportesPage() {
         title="Reportes de ventas"
         description={
           report
-            ? formatReportPeriod(report.from, report.to)
+            ? formatReportPeriod(report.from, report.to, report.year)
             : 'Análisis por período'
         }
         action={
@@ -134,6 +163,31 @@ export default function ReportesPage() {
             </FilterChip>
           ))}
         </div>
+
+        {preset === 'year' && (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
+            <label className="block">
+              <span className="text-sm font-bold text-foreground mb-1.5 block">
+                Año
+              </span>
+              <select
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(Number(e.target.value))}
+                className="w-full rounded-xl border border-border bg-background px-3 py-2.5 text-sm font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+              >
+                {yearOptions.map((year) => (
+                  <option key={year} value={year}>
+                    {year}
+                    {year === currentYear ? ' (en curso)' : ''}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <Button onClick={load} disabled={loadingReport}>
+              Aplicar
+            </Button>
+          </div>
+        )}
 
         {preset === 'custom' && (
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
@@ -193,15 +247,22 @@ export default function ReportesPage() {
             />
           </div>
 
-          {report.dailySeries.length > 0 && (
+          {chartSeries.length > 0 && (
             <Card padding="lg">
               <h3 className="text-lg font-extrabold text-foreground mb-1">
-                Ventas por día
+                {report.granularity === 'month'
+                  ? 'Ventas por mes'
+                  : 'Ventas por día'}
               </h3>
               <p className="text-sm text-text-secondary mb-5">
-                Resumen visual del período seleccionado
+                {report.granularity === 'month'
+                  ? 'Resumen mensual del año seleccionado'
+                  : 'Resumen visual del período seleccionado'}
               </p>
-              <SalesChart series={report.dailySeries} />
+              <SalesChart
+                series={chartSeries}
+                granularity={report.granularity ?? 'day'}
+              />
             </Card>
           )}
 
@@ -294,8 +355,10 @@ export default function ReportesPage() {
 
           <Card padding="sm" className="bg-background border-dashed text-sm text-text-secondary">
             Las ventas se calculan por fecha de cobro en zona horaria{' '}
-            <strong className="text-foreground">{report.timezone}</strong>. Rango
-            máximo: 93 días.
+            <strong className="text-foreground">{report.timezone}</strong>.
+            {report.granularity === 'month'
+              ? ' El reporte anual muestra ventas agrupadas por mes.'
+              : ' Rango personalizado máximo: 93 días.'}
           </Card>
         </div>
       ) : null}
