@@ -10,8 +10,8 @@ interface KitchenTicketProps {
 export function KitchenTicket({ order }: KitchenTicketProps) {
   const typeLabel = ORDER_TYPE_LABELS[order.type];
   const destination =
-    order.type === 'MESA' && order.tableNumber
-      ? `Mesa ${order.tableNumber}`
+    order.type === 'MESA'
+      ? order.customerName?.trim() || order.tableNumber?.trim() || typeLabel
       : order.type === 'DELIVERY'
         ? 'DELIVERY'
         : typeLabel;

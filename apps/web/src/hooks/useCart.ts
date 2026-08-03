@@ -104,9 +104,9 @@ export function useCart() {
 
   const loadFromOrder = useCallback((order: Order) => {
     setOrderType('MESA');
-    setTableNumber(order.tableNumber ?? '');
+    setCustomerName(order.customerName?.trim() || order.tableNumber?.trim() || '');
+    setTableNumber('');
     setOrderNotes(order.notes ?? '');
-    setCustomerName('');
     setCustomerPhone('');
     setDeliveryAddress('');
     setDeliveryReference('');

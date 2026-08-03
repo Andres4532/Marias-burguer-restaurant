@@ -38,12 +38,7 @@ export class CreateOrderDto {
   @IsEnum(OrderType)
   type: OrderType;
 
-  @ValidateIf((o) => o.type === OrderType.MESA)
-  @IsString()
-  @IsNotEmpty()
-  tableNumber?: string;
-
-  @ValidateIf((o) => o.type === OrderType.DELIVERY)
+  @ValidateIf((o) => o.type === OrderType.MESA || o.type === OrderType.DELIVERY)
   @IsString()
   @IsNotEmpty()
   @MinLength(2)

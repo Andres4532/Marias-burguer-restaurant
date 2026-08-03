@@ -4,6 +4,7 @@ import {
   IsArray,
   ValidateNested,
   IsNotEmpty,
+  MinLength,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { CreateOrderItemDto } from './create-order.dto';
@@ -11,7 +12,8 @@ import { CreateOrderItemDto } from './create-order.dto';
 export class UpdateMesaOrderDto {
   @IsString()
   @IsNotEmpty()
-  tableNumber: string;
+  @MinLength(2)
+  customerName: string;
 
   @IsOptional()
   @IsString()

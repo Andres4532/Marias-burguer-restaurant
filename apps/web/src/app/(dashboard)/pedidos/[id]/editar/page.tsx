@@ -132,8 +132,8 @@ export default function EditarPedidoPage() {
   const handleSubmit = async () => {
     setError('');
 
-    if (!cart.tableNumber.trim()) {
-      setError('Ingresa el número de mesa');
+    if (!cart.customerName.trim()) {
+      setError('Ingresa el nombre');
       return;
     }
 
@@ -145,7 +145,7 @@ export default function EditarPedidoPage() {
     setSubmitting(true);
     try {
       await updateMesaOrder(id, {
-        tableNumber: cart.tableNumber.trim(),
+        customerName: cart.customerName.trim(),
         notes: cart.orderNotes || undefined,
         items: cart.items.map((item) => ({
           productId: item.productId,
@@ -217,12 +217,12 @@ export default function EditarPedidoPage() {
       <div className="grid grid-cols-1 xl:grid-cols-[1fr_380px] gap-6">
         <div className="space-y-4">
           <Card>
-            <p className="text-sm font-bold text-foreground mb-3">Mesa</p>
+            <p className="text-sm font-bold text-foreground mb-3">Cliente en mesa</p>
             <Input
-              label="Número de mesa"
-              placeholder="Ej: 5"
-              value={cart.tableNumber}
-              onChange={(e) => cart.setTableNumber(e.target.value)}
+              label="Nombre"
+              placeholder="Ej: Juan Pérez"
+              value={cart.customerName}
+              onChange={(e) => cart.setCustomerName(e.target.value)}
             />
           </Card>
 

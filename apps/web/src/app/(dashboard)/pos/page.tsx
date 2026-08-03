@@ -94,8 +94,8 @@ export default function PosPage() {
   const handleSubmit = async () => {
     setError('');
 
-    if (cart.orderType === 'MESA' && !cart.tableNumber.trim()) {
-      setError('Ingresa el número de mesa');
+    if (cart.orderType === 'MESA' && !cart.customerName.trim()) {
+      setError('Ingresa el nombre');
       return;
     }
 
@@ -129,10 +129,10 @@ export default function PosPage() {
     try {
       const order = await createOrder({
         type: cart.orderType,
-        tableNumber:
-          cart.orderType === 'MESA' ? cart.tableNumber.trim() : undefined,
         customerName:
-          cart.orderType === 'DELIVERY' ? cart.customerName.trim() : undefined,
+          cart.orderType === 'MESA' || cart.orderType === 'DELIVERY'
+            ? cart.customerName.trim()
+            : undefined,
         customerPhone:
           cart.orderType === 'DELIVERY' ? cart.customerPhone.trim() : undefined,
         deliveryAddress:
@@ -198,10 +198,10 @@ export default function PosPage() {
             {cart.orderType === 'MESA' && (
               <div className="mt-4">
                 <Input
-                  label="Número de mesa"
-                  placeholder="Ej: 5"
-                  value={cart.tableNumber}
-                  onChange={(e) => cart.setTableNumber(e.target.value)}
+                  label="Nombre"
+                  placeholder="Ej: Juan Pérez"
+                  value={cart.customerName}
+                  onChange={(e) => cart.setCustomerName(e.target.value)}
                 />
               </div>
             )}

@@ -199,8 +199,8 @@ export class OrdersService {
   }
 
   async create(dto: CreateOrderDto, userId: string) {
-    if (dto.type === OrderType.MESA && !dto.tableNumber?.trim()) {
-      throw new BadRequestException('El número de mesa es requerido');
+    if (dto.type === OrderType.MESA && !dto.customerName?.trim()) {
+      throw new BadRequestException('El nombre es requerido');
     }
 
     if (dto.type === OrderType.DELIVERY) {
@@ -216,9 +216,11 @@ export class OrdersService {
     return this.createInternal({
       type: dto.type,
       source: OrderSource.CAJA,
-      tableNumber: dto.type === OrderType.MESA ? dto.tableNumber : undefined,
+      tableNumber: undefined,
       customerName:
-        dto.type === OrderType.DELIVERY ? dto.customerName?.trim() : undefined,
+        dto.type === OrderType.MESA || dto.type === OrderType.DELIVERY
+          ? dto.customerName?.trim()
+          : undefined,
       customerPhone:
         dto.type === OrderType.DELIVERY ? dto.customerPhone?.trim() : undefined,
       deliveryAddress:
@@ -646,8 +648,8 @@ export class OrdersService {
       throw new BadRequestException('No se puede editar un pedido ya cobrado');
     }
 
-    if (!dto.tableNumber?.trim()) {
-      throw new BadRequestException('El número de mesa es requerido');
+    if (!dto.customerName?.trim()) {
+      throw new BadRequestException('El nombre es requerido');
     }
 
     const { subtotal, itemsData } = await this.buildItemsData(dto.items);
@@ -704,7 +706,8 @@ export class OrdersService {
       return tx.order.update({
         where: { id },
         data: {
-          tableNumber: dto.tableNumber.trim(),
+          customerName: dto.customerName.trim(),
+          tableNumber: null,
           notes: dto.notes,
           subtotal,
           total: subtotal,

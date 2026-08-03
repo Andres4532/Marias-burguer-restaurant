@@ -96,7 +96,7 @@ export interface CreateOrderInput {
 }
 
 export interface UpdateMesaOrderInput {
-  tableNumber: string;
+  customerName: string;
   notes?: string;
   items: CreateOrderItemInput[];
 }
@@ -131,8 +131,9 @@ export const ORDER_STATUS_COLORS: Record<OrderStatus, string> = {
 };
 
 export function getOrderSummary(order: Order): string {
-  if (order.type === 'MESA' && order.tableNumber) {
-    return `Mesa ${order.tableNumber}`;
+  if (order.type === 'MESA') {
+    const name = order.customerName?.trim() || order.tableNumber?.trim();
+    if (name) return name;
   }
   if (order.type === 'DELIVERY') {
     const parts = [order.customerName, order.deliveryAddress].filter(Boolean);
