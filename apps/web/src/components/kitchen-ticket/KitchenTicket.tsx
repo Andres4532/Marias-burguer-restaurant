@@ -9,9 +9,11 @@ interface KitchenTicketProps {
 
 export function KitchenTicket({ order }: KitchenTicketProps) {
   const typeLabel = ORDER_TYPE_LABELS[order.type];
+  const mesaName =
+    order.customerName?.trim() || order.tableNumber?.trim() || null;
   const destination =
     order.type === 'MESA'
-      ? order.customerName?.trim() || order.tableNumber?.trim() || typeLabel
+      ? mesaName || typeLabel
       : order.type === 'DELIVERY'
         ? 'DELIVERY'
         : typeLabel;
@@ -26,6 +28,18 @@ export function KitchenTicket({ order }: KitchenTicketProps) {
         </p>
         <p className="ticket-type">{typeLabel.toUpperCase()}</p>
       </div>
+
+      {order.type === 'MESA' && mesaName && (
+        <>
+          <hr className="ticket-divider" />
+          <div className="ticket-delivery">
+            <p className="ticket-delivery-title">MESA</p>
+            <p className="ticket-delivery-line">
+              <strong>Nombre:</strong> {mesaName}
+            </p>
+          </div>
+        </>
+      )}
 
       {order.type === 'DELIVERY' && (
         <>
