@@ -232,7 +232,10 @@ export class OrdersService {
   }
 
   async create(dto: CreateOrderDto, userId: string) {
-    if (dto.type === OrderType.MESA && !dto.customerName?.trim()) {
+    if (
+      (dto.type === OrderType.MESA || dto.type === OrderType.PARA_LLEVAR) &&
+      !dto.customerName?.trim()
+    ) {
       throw new BadRequestException('El nombre es requerido');
     }
 
@@ -251,7 +254,9 @@ export class OrdersService {
       source: OrderSource.CAJA,
       tableNumber: undefined,
       customerName:
-        dto.type === OrderType.MESA || dto.type === OrderType.DELIVERY
+        dto.type === OrderType.MESA ||
+        dto.type === OrderType.PARA_LLEVAR ||
+        dto.type === OrderType.DELIVERY
           ? dto.customerName?.trim()
           : undefined,
       customerPhone:

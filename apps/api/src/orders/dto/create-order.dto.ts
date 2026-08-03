@@ -38,7 +38,12 @@ export class CreateOrderDto {
   @IsEnum(OrderType)
   type: OrderType;
 
-  @ValidateIf((o) => o.type === OrderType.MESA || o.type === OrderType.DELIVERY)
+  @ValidateIf(
+    (o) =>
+      o.type === OrderType.MESA ||
+      o.type === OrderType.PARA_LLEVAR ||
+      o.type === OrderType.DELIVERY,
+  )
   @IsString()
   @IsNotEmpty()
   @MinLength(2)

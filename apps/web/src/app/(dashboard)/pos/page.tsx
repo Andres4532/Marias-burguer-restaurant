@@ -94,8 +94,15 @@ export default function PosPage() {
   const handleSubmit = async () => {
     setError('');
 
-    if (cart.orderType === 'MESA' && !cart.customerName.trim()) {
-      setError('Ingresa el nombre');
+    if (
+      (cart.orderType === 'MESA' || cart.orderType === 'PARA_LLEVAR') &&
+      !cart.customerName.trim()
+    ) {
+      setError(
+        cart.orderType === 'MESA'
+          ? 'Ingresa el nombre'
+          : 'Ingresa el nombre para recojo',
+      );
       return;
     }
 
@@ -130,7 +137,9 @@ export default function PosPage() {
       const order = await createOrder({
         type: cart.orderType,
         customerName:
-          cart.orderType === 'MESA' || cart.orderType === 'DELIVERY'
+          cart.orderType === 'MESA' ||
+          cart.orderType === 'PARA_LLEVAR' ||
+          cart.orderType === 'DELIVERY'
             ? cart.customerName.trim()
             : undefined,
         customerPhone:
@@ -195,10 +204,14 @@ export default function PosPage() {
               ))}
             </div>
 
-            {cart.orderType === 'MESA' && (
+            {(cart.orderType === 'MESA' || cart.orderType === 'PARA_LLEVAR') && (
               <div className="mt-4">
                 <Input
-                  label="Nombre"
+                  label={
+                    cart.orderType === 'MESA'
+                      ? 'Nombre'
+                      : 'Nombre para recojo'
+                  }
                   placeholder="Ej: Juan Pérez"
                   value={cart.customerName}
                   onChange={(e) => cart.setCustomerName(e.target.value)}

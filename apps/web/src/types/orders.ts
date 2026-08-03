@@ -137,6 +137,10 @@ export function getOrderSummary(order: Order): string {
     const name = order.customerName?.trim() || order.tableNumber?.trim();
     if (name) return name;
   }
+  if (order.type === 'PARA_LLEVAR') {
+    const name = order.customerName?.trim();
+    if (name) return name;
+  }
   if (order.type === 'DELIVERY') {
     const parts = [order.customerName, order.deliveryAddress].filter(Boolean);
     return parts.join(' · ') || ORDER_TYPE_LABELS.DELIVERY;
