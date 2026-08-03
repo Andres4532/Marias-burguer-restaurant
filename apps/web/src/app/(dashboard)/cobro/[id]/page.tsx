@@ -28,6 +28,13 @@ const PAYMENT_ICONS: Record<PaymentMethod, string> = {
   TARJETA: '💳',
 };
 
+function parseCashAmount(value: string): number | null {
+  const normalized = value.trim().replace(',', '.');
+  if (!normalized) return null;
+  const parsed = parseFloat(normalized);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
 function suggestCashAmounts(total: number): number[] {
   const suggestions = new Set<number>([total]);
   const bills = [10, 20, 50, 100, 200];
@@ -45,6 +52,9 @@ export default function CobroPage() {
   const [method, setMethod] = useState<PaymentMethod>('EFECTIVO');
   const [amountReceived, setAmountReceived] = useState('');
   const [change, setChange] = useState<number | null>(null);
+  const [amountReceivedPaid, setAmountReceivedPaid] = useState<number | null>(
+    null,
+  );
   const [loading, setLoading] = useState(true);
   const [paying, setPaying] = useState(false);
   const [paid, setPaid] = useState(false);
@@ -62,6 +72,10 @@ export default function CobroPage() {
       setOrder(data);
       if (data.payment || !['PENDIENTE', 'PENDIENTE_CONFIRMACION', 'EN_COCINA', 'LISTO'].includes(data.status)) {
         setPaid(true);
+        if (data.payment?.method === 'EFECTIVO') {
+          setAmountReceivedPaid(data.payment.amountReceived ?? null);
+          setChange(data.payment.changeAmount ?? null);
+        }
       } else {
         setAmountReceived(String(data.total));
       }
@@ -82,19 +96,31 @@ export default function CobroPage() {
     [order],
   );
 
+  const cashReceived = useMemo(
+    () => parseCashAmount(amountReceived),
+    [amountReceived],
+  );
+
   const computedChange = useMemo(() => {
-    if (method !== 'EFECTIVO' || !order) return null;
-    const received = parseFloat(amountReceived);
-    if (isNaN(received)) return null;
-    return Math.round((received - order.total) * 100) / 100;
-  }, [method, amountReceived, order]);
+    if (method !== 'EFECTIVO' || !order || cashReceived == null) return null;
+    return Math.round((cashReceived - order.total) * 100) / 100;
+  }, [method, cashReceived, order]);
+
+  const cashIsValid =
+    method !== 'EFECTIVO' ||
+    (cashReceived != null && cashReceived >= (order?.total ?? 0));
+
+  const cashIsInsufficient =
+    method === 'EFECTIVO' &&
+    cashReceived != null &&
+    order != null &&
+    cashReceived < order.total;
 
   const handlePay = async () => {
     setError('');
 
     if (method === 'EFECTIVO') {
-      const received = parseFloat(amountReceived);
-      if (isNaN(received) || received < (order?.total ?? 0)) {
+      if (cashReceived == null || cashReceived < (order?.total ?? 0)) {
         setError('El monto recibido debe ser mayor o igual al total');
         return;
       }
@@ -116,7 +142,7 @@ export default function CobroPage() {
       const result = await payOrder(
         id,
         method,
-        method === 'EFECTIVO' ? parseFloat(amountReceived) : undefined,
+        method === 'EFECTIVO' ? cashReceived ?? undefined : undefined,
         wantsBilling
           ? {
               billingNit,
@@ -126,7 +152,10 @@ export default function CobroPage() {
           : undefined,
       );
       setOrder(result.order);
-      setChange(result.change ?? null);
+      setChange(result.change ?? result.order.payment?.changeAmount ?? null);
+      setAmountReceivedPaid(
+        result.amountReceived ?? result.order.payment?.amountReceived ?? null,
+      );
       setPaid(true);
       setTimeout(() => printKitchenTicket(), 500);
     } catch (e) {
@@ -256,7 +285,35 @@ export default function CobroPage() {
                       {formatPrice(order.payment.amount)}
                     </p>
                   )}
-                  {change != null && change > 0 && (
+                  {order.payment?.method === 'EFECTIVO' &&
+                    amountReceivedPaid != null && (
+                      <div className="mt-4 rounded-xl border border-green-800/40 bg-green-950/20 p-4 text-left space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span className="text-text-secondary">Recibido</span>
+                          <span className="font-bold text-foreground">
+                            {formatPrice(amountReceivedPaid)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-text-secondary">Total</span>
+                          <span className="font-bold text-foreground">
+                            {formatPrice(order.total)}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center pt-2 border-t border-green-800/30">
+                          <span className="font-bold text-green-800">Vuelto</span>
+                          <span className="text-2xl font-extrabold text-green-800">
+                            {formatPrice(change ?? 0)}
+                          </span>
+                        </div>
+                        {(change ?? 0) === 0 && (
+                          <p className="text-xs text-green-700 font-medium">
+                            Pago exacto — sin vuelto
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  {order.payment?.method !== 'EFECTIVO' && change != null && change > 0 && (
                     <p className="text-green-800 font-extrabold text-2xl mt-3">
                       Vuelto: {formatPrice(change)}
                     </p>
@@ -319,6 +376,7 @@ export default function CobroPage() {
                       type="number"
                       min={order.total}
                       step="0.5"
+                      inputMode="decimal"
                       value={amountReceived}
                       onChange={(e) => setAmountReceived(e.target.value)}
                     />
@@ -341,17 +399,53 @@ export default function CobroPage() {
                       </div>
                     </div>
 
-                    {computedChange != null && computedChange >= 0 && (
+                    {cashIsInsufficient && (
+                      <p className="text-sm text-red-300 bg-red-950/40 border border-red-800/50 px-3 py-2 rounded-xl font-medium">
+                        Falta {formatPrice(order.total - (cashReceived ?? 0))} para
+                        completar el cobro
+                      </p>
+                    )}
+
+                    {cashIsValid && computedChange != null && (
                       <Card
                         padding="sm"
-                        className="text-center bg-blue-950/30 border-blue-800/50"
+                        className={
+                          computedChange === 0
+                            ? 'bg-green-950/30 border-green-800/50'
+                            : 'bg-blue-950/30 border-blue-800/50'
+                        }
                       >
-                        <p className="text-sm text-text-secondary font-bold">
-                          Vuelto
-                        </p>
-                        <p className="text-2xl font-extrabold text-blue-800 mt-1">
-                          {formatPrice(Math.max(0, computedChange))}
-                        </p>
+                        <div className="grid grid-cols-3 gap-2 text-center text-sm">
+                          <div>
+                            <p className="text-text-secondary font-bold">Total</p>
+                            <p className="font-extrabold text-foreground mt-1">
+                              {formatPrice(order.total)}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-text-secondary font-bold">Recibido</p>
+                            <p className="font-extrabold text-foreground mt-1">
+                              {formatPrice(cashReceived ?? 0)}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-text-secondary font-bold">Vuelto</p>
+                            <p
+                              className={`font-extrabold text-xl mt-1 ${
+                                computedChange === 0
+                                  ? 'text-green-800'
+                                  : 'text-blue-800'
+                              }`}
+                            >
+                              {formatPrice(Math.max(0, computedChange))}
+                            </p>
+                          </div>
+                        </div>
+                        {computedChange === 0 && (
+                          <p className="text-center text-xs text-green-700 font-medium mt-2">
+                            Pago exacto — sin vuelto
+                          </p>
+                        )}
                       </Card>
                     )}
                   </div>
@@ -417,13 +511,18 @@ export default function CobroPage() {
 
                 <Button
                   onClick={handlePay}
-                  disabled={paying}
+                  disabled={paying || !cashIsValid}
                   size="lg"
                   className="w-full"
                 >
                   {paying
                     ? 'Procesando...'
-                    : `Confirmar cobro · ${formatPrice(order.total)}`}
+                    : method === 'EFECTIVO' &&
+                        cashIsValid &&
+                        computedChange != null &&
+                        computedChange > 0
+                      ? `Confirmar cobro · Vuelto ${formatPrice(computedChange)}`
+                      : `Confirmar cobro · ${formatPrice(order.total)}`}
                 </Button>
               </div>
             )}

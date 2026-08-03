@@ -32,13 +32,38 @@ export class OrdersService {
     return { start, end };
   }
 
-  private async getNextOrderNumber(tx: Prisma.TransactionClient): Promise<number> {
-    const today = this.timezone.getTodayDate();
+  private async getNextOrderNumber(
+    tx: Prisma.TransactionClient,
+    orderDate: Date,
+  ): Promise<number> {
+    const maxToday = await tx.order.aggregate({
+      where: { orderDate },
+      _max: { orderNumber: true },
+    });
+    const maxExisting = maxToday._max.orderNumber ?? 0;
 
-    const counter = await tx.dailyOrderCounter.upsert({
-      where: { date: today },
-      create: { date: today, lastNumber: 1 },
-      update: { lastNumber: { increment: 1 } },
+    const existing = await tx.dailyOrderCounter.findUnique({
+      where: { date: orderDate },
+    });
+
+    if (!existing) {
+      const next = maxExisting + 1;
+      await tx.dailyOrderCounter.create({
+        data: { date: orderDate, lastNumber: next },
+      });
+      return next;
+    }
+
+    if (existing.lastNumber < maxExisting) {
+      await tx.dailyOrderCounter.update({
+        where: { date: orderDate },
+        data: { lastNumber: maxExisting },
+      });
+    }
+
+    const counter = await tx.dailyOrderCounter.update({
+      where: { date: orderDate },
+      data: { lastNumber: { increment: 1 } },
     });
 
     return counter.lastNumber;
@@ -80,6 +105,8 @@ export class OrdersService {
     id: string;
     method: string;
     amount: { toString(): string };
+    amountReceived: { toString(): string } | null;
+    changeAmount: { toString(): string } | null;
     paidAt: Date;
     status: string;
     billingNit: string | null;
@@ -92,6 +119,10 @@ export class OrdersService {
       id: paid.id,
       method: paid.method,
       amount: toNumber(paid.amount),
+      amountReceived:
+        paid.amountReceived != null ? toNumber(paid.amountReceived) : null,
+      changeAmount:
+        paid.changeAmount != null ? toNumber(paid.changeAmount) : null,
       paidAt: paid.paidAt,
       billingNit: paid.billingNit,
       billingBusinessName: paid.billingBusinessName,
@@ -130,6 +161,8 @@ export class OrdersService {
       id: string;
       method: string;
       amount: { toString(): string };
+      amountReceived: { toString(): string } | null;
+      changeAmount: { toString(): string } | null;
       paidAt: Date;
       status: string;
       billingNit: string | null;
@@ -489,11 +522,13 @@ export class OrdersService {
         }
       }
 
-      const orderNumber = await this.getNextOrderNumber(tx);
+      const orderDate = this.timezone.getTodayDate();
+      const orderNumber = await this.getNextOrderNumber(tx, orderDate);
 
       return tx.order.create({
         data: {
           orderNumber,
+          orderDate,
           type: data.type,
           source: data.source,
           status: data.initialStatus ?? OrderStatus.PENDIENTE,

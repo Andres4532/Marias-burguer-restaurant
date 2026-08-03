@@ -71,7 +71,7 @@ export default function PedidosPage() {
     <div>
       <PageHeader
         title="Pedidos del día"
-        description="Pedidos registrados hoy"
+        description="Pedidos de hoy · numeración #001 reinicia cada día"
         action={
           <Link href="/pos">
             <Button>+ Nuevo pedido</Button>

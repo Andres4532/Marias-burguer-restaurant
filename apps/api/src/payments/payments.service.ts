@@ -78,6 +78,9 @@ export class PaymentsService {
         ? Math.round((dto.amountReceived - orderTotal) * 100) / 100
         : undefined;
 
+    const amountReceived =
+      dto.method === PaymentMethod.EFECTIVO ? dto.amountReceived : null;
+
     const billing = this.normalizeBilling(dto);
 
     const now = new Date();
@@ -88,6 +91,9 @@ export class PaymentsService {
           orderId,
           method: dto.method,
           amount: order.total,
+          amountReceived:
+            amountReceived != null ? amountReceived : undefined,
+          changeAmount: change != null ? change : undefined,
           status: PaymentStatus.PAGADO,
           paidAt: now,
           createdById: userId,
@@ -159,6 +165,8 @@ export class PaymentsService {
     id: string;
     method: PaymentMethod;
     amount: { toString(): string };
+    amountReceived: { toString(): string } | null;
+    changeAmount: { toString(): string } | null;
     paidAt: Date;
     billingNit: string | null;
     billingBusinessName: string | null;
@@ -168,6 +176,12 @@ export class PaymentsService {
       id: payment.id,
       method: payment.method,
       amount: toNumber(payment.amount),
+      amountReceived:
+        payment.amountReceived != null
+          ? toNumber(payment.amountReceived)
+          : null,
+      changeAmount:
+        payment.changeAmount != null ? toNumber(payment.changeAmount) : null,
       paidAt: payment.paidAt,
       billingNit: payment.billingNit,
       billingBusinessName: payment.billingBusinessName,
@@ -207,6 +221,8 @@ export class PaymentsService {
       id: string;
       method: PaymentMethod;
       amount: { toString(): string };
+      amountReceived: { toString(): string } | null;
+      changeAmount: { toString(): string } | null;
       paidAt: Date;
       billingNit: string | null;
       billingBusinessName: string | null;

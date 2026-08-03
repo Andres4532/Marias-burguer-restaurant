@@ -32,6 +32,8 @@ export interface Payment {
   id: string;
   method: PaymentMethod;
   amount: number;
+  amountReceived?: number | null;
+  changeAmount?: number | null;
   paidAt: string;
   billingNit?: string | null;
   billingBusinessName?: string | null;

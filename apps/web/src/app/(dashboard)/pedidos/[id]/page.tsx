@@ -132,6 +132,30 @@ export default function PedidoDetallePage() {
               )}
             </div>
 
+            {order.payment?.method === 'EFECTIVO' &&
+              order.payment.amountReceived != null && (
+                <Card
+                  padding="sm"
+                  className="mb-5 bg-emerald-950/20 border-emerald-800/40 text-sm"
+                >
+                  <p className="font-extrabold text-emerald-100 mb-2">
+                    Cobro en efectivo
+                  </p>
+                  <div className="flex justify-between gap-4">
+                    <span className="text-text-secondary">Recibido</span>
+                    <span className="font-bold text-foreground">
+                      {formatPrice(order.payment.amountReceived)}
+                    </span>
+                  </div>
+                  <div className="flex justify-between gap-4 mt-1">
+                    <span className="text-text-secondary">Vuelto</span>
+                    <span className="font-extrabold text-emerald-200">
+                      {formatPrice(order.payment.changeAmount ?? 0)}
+                    </span>
+                  </div>
+                </Card>
+              )}
+
             {order.type === 'DELIVERY' && (
               <Card
                 padding="sm"

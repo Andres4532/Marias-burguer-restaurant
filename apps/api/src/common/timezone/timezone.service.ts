@@ -33,9 +33,14 @@ export class TimezoneService {
     return { start, end, from: fromStr, to: toStr };
   }
 
-  /** Fecha calendario (Date @db.Date) para contadores diarios. */
+  /** Fecha calendario (Date @db.Date) para contadores diarios. Mediodía UTC evita desfases por zona horaria. */
   getTodayDate(reference = new Date()): Date {
     const { dateStr } = this.getTodayBounds(reference);
-    return fromZonedTime(`${dateStr} 00:00:00.000`, this.timezone);
+    return new Date(`${dateStr}T12:00:00.000Z`);
+  }
+
+  /** Cadena yyyy-MM-dd en la zona del restaurante. */
+  getTodayDateString(reference = new Date()): string {
+    return this.getTodayBounds(reference).dateStr;
   }
 }

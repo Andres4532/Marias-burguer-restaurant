@@ -116,6 +116,7 @@ model ProductExtra {
 model Order {
   id          String      @id @default(cuid())
   orderNumber Int
+  orderDate   DateTime    @db.Date
   type        OrderType
   source      OrderSource @default(CAJA)
   status      OrderStatus @default(PENDIENTE)
@@ -146,6 +147,7 @@ model Order {
 
   @@index([status, createdAt])
   @@index([source, status])
+  @@index([orderDate, orderNumber])
 }
 
 model RestaurantSettings {
@@ -191,6 +193,8 @@ model Payment {
   orderId     String
   method      PaymentMethod
   amount      Decimal       @db.Decimal(10, 2)
+  amountReceived Decimal?   @db.Decimal(10, 2)
+  changeAmount   Decimal?   @db.Decimal(10, 2)
   status      PaymentStatus @default(PAGADO)
   paidAt      DateTime      @default(now())
   createdById String
