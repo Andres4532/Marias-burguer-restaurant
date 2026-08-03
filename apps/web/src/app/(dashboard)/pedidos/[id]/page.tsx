@@ -236,7 +236,11 @@ export default function PedidoDetallePage() {
                   <DeliveryHandoffButtons order={order} />
                 )}
 
-              {order.status === 'PENDIENTE' && !isPaid && (
+              {(order.status === 'PENDIENTE' ||
+                order.status === 'PENDIENTE_CONFIRMACION' ||
+                order.status === 'EN_COCINA' ||
+                order.status === 'LISTO') &&
+                !isPaid && (
                 <Link href={`/cobro/${id}`} className="block w-full">
                   <Button className="w-full" size="lg">
                     Cobrar pedido

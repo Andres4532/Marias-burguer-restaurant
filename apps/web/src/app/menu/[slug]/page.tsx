@@ -191,9 +191,14 @@ export default function PublicMenuPage() {
       setCartOpen(false);
       setConfirmOpen(false);
       void loadMenu();
-      router.push(
-        `/menu/${slug}/exito?n=${order.orderNumber}&total=${order.total}`,
-      );
+      const track = order.publicTrackingToken;
+      if (track) {
+        router.push(`/menu/${slug}/seguimiento/${track}`);
+      } else {
+        router.push(
+          `/menu/${slug}/exito?n=${order.orderNumber}&total=${order.total}`,
+        );
+      }
     } catch (e) {
       setError(getPublicMenuErrorMessage(e));
     } finally {

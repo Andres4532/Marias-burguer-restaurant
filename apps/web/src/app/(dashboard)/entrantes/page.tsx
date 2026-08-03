@@ -8,8 +8,12 @@ import { Card } from '@/components/ui/Card';
 import { StatusBadge } from '@/components/orders/StatusBadge';
 import { DeliveryHandoffButtons } from '@/components/orders/DeliveryHandoffButtons';
 import { useEntrantesAlerts } from '@/components/entrantes/EntrantesAlertsProvider';
-import { getOrders, formatOrderNumber, formatTime } from '@/lib/orders';
+import { getOrders, confirmPublicOrder, formatOrderNumber, formatTime } from '@/lib/orders';
 import { formatPrice, getErrorMessage } from '@/lib/catalog';
+import {
+  buildCustomerCookingWhatsAppUrl,
+  openCustomerWhatsApp,
+} from '@/lib/customer-notify';
 import {
   ORDER_TYPE_LABELS,
   getOrderSummary,
@@ -22,11 +26,12 @@ export default function EntrantesPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [confirmingId, setConfirmingId] = useState<string | null>(null);
 
   const load = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
     try {
-      const data = await getOrders('PENDIENTE', true, 'MENU_PUBLICO');
+      const data = await getOrders('PENDIENTE_CONFIRMACION', true, 'MENU_PUBLICO');
       setOrders(data);
       setError('');
     } catch (e) {
@@ -46,6 +51,27 @@ export default function EntrantesPage() {
       load(true);
     }
   }, [newOrderCount, load]);
+
+  const handleConfirm = async (order: Order) => {
+    setConfirmingId(order.id);
+    setError('');
+    try {
+      await confirmPublicOrder(order.id);
+      await load(true);
+      if (order.customerPhone) {
+        const url = buildCustomerCookingWhatsAppUrl(
+          order.customerPhone,
+          order.orderNumber,
+          "Cami's burger",
+        );
+        openCustomerWhatsApp(url);
+      }
+    } catch (e) {
+      setError(getErrorMessage(e));
+    } finally {
+      setConfirmingId(null);
+    }
+  };
 
   return (
     <div>
@@ -92,8 +118,8 @@ export default function EntrantesPage() {
         padding="sm"
         className="mb-4 bg-primary/5 border-primary/10 text-sm text-foreground"
       >
-        Los clientes arman su pedido en el menú público. Cobrá aquí y enviá a
-        cocina.
+        Los clientes piden desde el menú público. Revisa el pedido, confírmalo
+        para enviar a cocina y avisa por WhatsApp. Luego podés cobrar.
       </Card>
 
       <Card padding="none" className="overflow-hidden">
@@ -154,6 +180,16 @@ export default function EntrantesPage() {
                     {order.type === 'DELIVERY' && (
                       <DeliveryHandoffButtons order={order} layout="row" />
                     )}
+                    <Button
+                      size="md"
+                      className="w-full sm:w-auto"
+                      disabled={confirmingId === order.id}
+                      onClick={() => void handleConfirm(order)}
+                    >
+                      {confirmingId === order.id
+                        ? 'Confirmando…'
+                        : 'Confirmar → cocina'}
+                    </Button>
                     <Link href={`/pedidos/${order.id}`}>
                       <Button variant="secondary" size="md" className="w-full sm:w-auto">
                         Ver detalle

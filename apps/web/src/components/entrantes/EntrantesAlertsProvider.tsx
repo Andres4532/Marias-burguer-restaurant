@@ -78,7 +78,7 @@ export function EntrantesAlertsProvider({
   }, []);
 
   useEffect(() => {
-    void getOrders('PENDIENTE', true, 'MENU_PUBLICO')
+    void getOrders('PENDIENTE_CONFIRMACION', true, 'MENU_PUBLICO')
       .then((orders) => {
         orders.forEach((order) => knownIds.current.add(order.id));
       })

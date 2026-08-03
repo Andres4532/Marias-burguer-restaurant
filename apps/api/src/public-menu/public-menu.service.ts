@@ -85,4 +85,8 @@ export class PublicMenuService {
 
     return this.ordersService.createFromPublicMenu(dto);
   }
+
+  trackOrder(token: string) {
+    return this.ordersService.getPublicOrderTracking(token);
+  }
 }

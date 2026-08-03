@@ -66,6 +66,9 @@ export const updateOrderStatus = (id: string, status: OrderStatus) =>
     token(),
   );
 
+export const confirmPublicOrder = (id: string) =>
+  apiFetch<Order>(`/orders/${id}/confirm`, { method: 'POST' }, token());
+
 export function formatOrderNumber(num: number): string {
   return `#${String(num).padStart(3, '0')}`;
 }

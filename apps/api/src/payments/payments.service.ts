@@ -3,7 +3,7 @@ import {
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
-import { OrderStatus, PaymentMethod, PaymentStatus } from '@prisma/client';
+import { OrderStatus, PaymentMethod, PaymentStatus, OrderSource } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { toNumber } from '../common/utils/decimal.util';
@@ -45,9 +45,16 @@ export class PaymentsService {
       throw new BadRequestException('Este pedido ya fue cobrado');
     }
 
-    if (order.status !== OrderStatus.PENDIENTE) {
+    const payableStatuses: OrderStatus[] = [
+      OrderStatus.PENDIENTE,
+      OrderStatus.PENDIENTE_CONFIRMACION,
+      OrderStatus.EN_COCINA,
+      OrderStatus.LISTO,
+    ];
+
+    if (!payableStatuses.includes(order.status)) {
       throw new BadRequestException(
-        'Solo se pueden cobrar pedidos en estado pendiente',
+        'Este pedido no se puede cobrar en su estado actual',
       );
     }
 
@@ -90,10 +97,16 @@ export class PaymentsService {
         },
       });
 
+      const nextStatus =
+        order.source === OrderSource.CAJA &&
+        order.status === OrderStatus.PENDIENTE
+          ? OrderStatus.EN_COCINA
+          : order.status;
+
       const updatedOrder = await tx.order.update({
         where: { id: orderId },
         data: {
-          status: OrderStatus.EN_COCINA,
+          status: nextStatus,
           paidAt: now,
         },
         include: {

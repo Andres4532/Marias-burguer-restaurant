@@ -60,7 +60,7 @@ export default function CobroPage() {
     try {
       const data = await getOrder(id);
       setOrder(data);
-      if (data.payment || data.status !== 'PENDIENTE') {
+      if (data.payment || !['PENDIENTE', 'PENDIENTE_CONFIRMACION', 'EN_COCINA', 'LISTO'].includes(data.status)) {
         setPaid(true);
       } else {
         setAmountReceived(String(data.total));

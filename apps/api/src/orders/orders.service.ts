@@ -3,6 +3,7 @@ import {
   NotFoundException,
   BadRequestException,
 } from '@nestjs/common';
+import { randomUUID } from 'crypto';
 import {
   OrderStatus,
   OrderType,
@@ -109,6 +110,7 @@ export class OrdersService {
     type: OrderType;
     source: OrderSource;
     status: OrderStatus;
+    publicTrackingToken?: string | null;
     tableNumber: string | null;
     customerName: string | null;
     customerPhone: string | null;
@@ -155,6 +157,7 @@ export class OrdersService {
       type: order.type,
       source: order.source,
       status: order.status,
+      publicTrackingToken: order.publicTrackingToken ?? null,
       tableNumber: order.tableNumber,
       customerName: order.customerName,
       customerPhone: order.customerPhone,
@@ -265,10 +268,91 @@ export class OrdersService {
         type === OrderType.DELIVERY ? dto.deliveryLongitude : undefined,
       notes: dto.notes,
       items: dto.items,
+      initialStatus: OrderStatus.PENDIENTE_CONFIRMACION,
+      publicTrackingToken: randomUUID().replace(/-/g, ''),
     });
 
-    this.eventsService.emitEntrante(order);
-    return order;
+    const mapped = this.mapOrder(order);
+    this.eventsService.emitEntrante(mapped);
+    return mapped;
+  }
+
+  async confirmPublicOrder(id: string) {
+    const order = await this.prisma.order.findUnique({
+      where: { id },
+      include: this.orderInclude,
+    });
+
+    if (!order) {
+      throw new NotFoundException('Pedido no encontrado');
+    }
+
+    if (order.source !== OrderSource.MENU_PUBLICO) {
+      throw new BadRequestException(
+        'Solo pedidos del menú público requieren confirmación',
+      );
+    }
+
+    if (order.status !== OrderStatus.PENDIENTE_CONFIRMACION) {
+      throw new BadRequestException(
+        'Este pedido ya fue confirmado o no está pendiente de confirmación',
+      );
+    }
+
+    const updated = await this.prisma.order.update({
+      where: { id },
+      data: { status: OrderStatus.EN_COCINA },
+      include: this.orderInclude,
+    });
+
+    return this.mapOrder(updated);
+  }
+
+  async getPublicOrderTracking(token: string) {
+    const order = await this.prisma.order.findFirst({
+      where: { publicTrackingToken: token, source: OrderSource.MENU_PUBLICO },
+      select: {
+        orderNumber: true,
+        status: true,
+        type: true,
+        total: true,
+        updatedAt: true,
+        customerName: true,
+      },
+    });
+
+    if (!order) {
+      throw new NotFoundException('Pedido no encontrado');
+    }
+
+    return {
+      orderNumber: order.orderNumber,
+      status: order.status,
+      type: order.type,
+      total: toNumber(order.total),
+      updatedAt: order.updatedAt,
+      customerName: order.customerName,
+      message: this.getPublicTrackingMessage(order.status),
+    };
+  }
+
+  private getPublicTrackingMessage(status: OrderStatus): string {
+    switch (status) {
+      case OrderStatus.PENDIENTE_CONFIRMACION:
+        return 'Esperando confirmación del restaurante…';
+      case OrderStatus.PENDIENTE:
+        return 'Pedido recibido. Pronto comenzará la preparación.';
+      case OrderStatus.EN_COCINA:
+        return '¡Tu pedido se está preparando!';
+      case OrderStatus.LISTO:
+        return '¡Tu pedido está listo!';
+      case OrderStatus.ENTREGADO:
+        return 'Pedido entregado. ¡Gracias!';
+      case OrderStatus.CANCELADO:
+        return 'Este pedido fue cancelado.';
+      default:
+        return 'Estado del pedido actualizado.';
+    }
   }
 
   private async buildItemsData(items: CreateOrderDto['items']) {
@@ -366,6 +450,8 @@ export class OrdersService {
     notes?: string;
     items: CreateOrderDto['items'];
     createdById?: string;
+    initialStatus?: OrderStatus;
+    publicTrackingToken?: string;
   }) {
     const { subtotal, itemsData } = await this.buildItemsData(data.items);
 
@@ -407,7 +493,8 @@ export class OrdersService {
           orderNumber,
           type: data.type,
           source: data.source,
-          status: OrderStatus.PENDIENTE,
+          status: data.initialStatus ?? OrderStatus.PENDIENTE,
+          publicTrackingToken: data.publicTrackingToken ?? null,
           tableNumber: data.tableNumber?.trim() || null,
           customerName: data.customerName || null,
           customerPhone: data.customerPhone || null,
@@ -485,6 +572,7 @@ export class OrdersService {
     const order = await this.findOne(id);
 
     const validTransitions: Record<OrderStatus, OrderStatus[]> = {
+      PENDIENTE_CONFIRMACION: [OrderStatus.EN_COCINA, OrderStatus.CANCELADO],
       PENDIENTE: [OrderStatus.CANCELADO],
       EN_COCINA: [OrderStatus.LISTO, OrderStatus.CANCELADO],
       LISTO: [OrderStatus.ENTREGADO, OrderStatus.CANCELADO],

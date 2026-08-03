@@ -1,6 +1,7 @@
 export type OrderType = 'MESA' | 'PARA_LLEVAR' | 'DELIVERY';
 export type OrderSource = 'CAJA' | 'MENU_PUBLICO';
 export type OrderStatus =
+  | 'PENDIENTE_CONFIRMACION'
   | 'PENDIENTE'
   | 'EN_COCINA'
   | 'LISTO'
@@ -56,6 +57,7 @@ export interface Order {
   createdAt: string;
   updatedAt: string;
   paidAt: string | null;
+  publicTrackingToken?: string | null;
   payment: Payment | null;
   createdBy?: { id: string; name: string } | null;
   items: OrderItem[];
@@ -105,6 +107,7 @@ export const ORDER_SOURCE_LABELS: Record<OrderSource, string> = {
 };
 
 export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
+  PENDIENTE_CONFIRMACION: 'Por confirmar',
   PENDIENTE: 'Pendiente',
   EN_COCINA: 'En cocina',
   LISTO: 'Listo',
@@ -113,6 +116,7 @@ export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
 };
 
 export const ORDER_STATUS_COLORS: Record<OrderStatus, string> = {
+  PENDIENTE_CONFIRMACION: 'bg-amber-100 text-amber-800',
   PENDIENTE: 'bg-yellow-100 text-yellow-800',
   EN_COCINA: 'bg-blue-100 text-blue-800',
   LISTO: 'bg-green-100 text-green-800',

@@ -19,6 +19,7 @@ enum OrderType {
 }
 
 enum OrderStatus {
+  PENDIENTE_CONFIRMACION
   PENDIENTE
   EN_COCINA
   LISTO
@@ -118,6 +119,7 @@ model Order {
   type        OrderType
   source      OrderSource @default(CAJA)
   status      OrderStatus @default(PENDIENTE)
+  publicTrackingToken String? @unique
 
   tableNumber String?
 

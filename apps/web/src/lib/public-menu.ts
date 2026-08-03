@@ -1,7 +1,7 @@
 import { apiFetch, parseApiError } from './api-client';
 import type { CatalogCategory } from '@/types/catalog';
 import type { Order } from '@/types/orders';
-import type { CreateOrderItemInput, OrderType } from '@/types/orders';
+import type { CreateOrderItemInput, OrderType, OrderStatus } from '@/types/orders';
 
 export interface PublicMenuResponse {
   restaurant: {
@@ -43,6 +43,19 @@ export const createPublicOrder = (slug: string, data: CreatePublicOrderInput) =>
     method: 'POST',
     body: JSON.stringify(data),
   });
+
+export interface PublicOrderTracking {
+  orderNumber: number;
+  status: OrderStatus;
+  type: OrderType;
+  total: number;
+  updatedAt: string;
+  customerName: string | null;
+  message: string;
+}
+
+export const trackPublicOrder = (token: string) =>
+  apiFetch<PublicOrderTracking>(`/public/menu/track/${token}`);
 
 export function getPublicMenuErrorMessage(error: unknown): string {
   return parseApiError(error);

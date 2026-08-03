@@ -21,6 +21,7 @@ import {
 
 const STATUS_FILTERS: Array<{ value: OrderStatus | ''; label: string }> = [
   { value: '', label: 'Todos' },
+  { value: 'PENDIENTE_CONFIRMACION', label: 'Por confirmar' },
   { value: 'PENDIENTE', label: 'Pendientes' },
   { value: 'EN_COCINA', label: 'En cocina' },
   { value: 'LISTO', label: 'Listos' },
@@ -133,7 +134,11 @@ export default function PedidosPage() {
           <div className="divide-y divide-border">
             {orders.map((order) => {
               const canCharge =
-                order.status === 'PENDIENTE' && !order.payment;
+                (order.status === 'PENDIENTE' ||
+                  order.status === 'PENDIENTE_CONFIRMACION' ||
+                  order.status === 'EN_COCINA' ||
+                  order.status === 'LISTO') &&
+                !order.payment;
 
               return (
                 <div

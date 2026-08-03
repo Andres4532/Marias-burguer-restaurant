@@ -56,4 +56,9 @@ export class OrdersController {
   ) {
     return this.ordersService.updateStatus(id, dto.status);
   }
+
+  @Post(':id/confirm')
+  confirmPublicOrder(@Param('id') id: string) {
+    return this.ordersService.confirmPublicOrder(id);
+  }
 }

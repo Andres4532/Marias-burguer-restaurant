@@ -18,6 +18,11 @@ export class PublicMenuController {
     return this.publicMenuService.getPublicLink();
   }
 
+  @Get('track/:token')
+  trackOrder(@Param('token') token: string) {
+    return this.publicMenuService.trackOrder(token);
+  }
+
   @Get(':slug')
   getMenu(@Param('slug') slug: string) {
     return this.publicMenuService.getMenu(slug);
