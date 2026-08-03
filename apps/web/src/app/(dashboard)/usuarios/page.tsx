@@ -186,10 +186,12 @@ export default function UsuariosPage() {
             onChange={(e) => setForm({ ...form, name: e.target.value })}
           />
           <Input
-            label="Correo"
-            type="email"
+            label="Correo o usuario"
+            type="text"
             value={form.email}
             onChange={(e) => setForm({ ...form, email: e.target.value })}
+            placeholder="ej: maria o maria@mail.com"
+            autoComplete="username"
           />
           <Input
             label="Contraseña inicial"

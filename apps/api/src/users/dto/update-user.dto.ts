@@ -1,5 +1,4 @@
 import {
-  IsEmail,
   IsEnum,
   IsString,
   IsBoolean,
@@ -8,10 +7,11 @@ import {
   MaxLength,
 } from 'class-validator';
 import { UserRole } from '@prisma/client';
+import { IsLoginIdentifier } from '../../common/validators/login-identifier';
 
 export class UpdateUserDto {
   @IsOptional()
-  @IsEmail()
+  @IsLoginIdentifier()
   email?: string;
 
   @IsOptional()

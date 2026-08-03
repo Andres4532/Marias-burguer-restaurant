@@ -75,13 +75,13 @@ export default function LoginPage() {
           <form onSubmit={handleSubmit} className="space-y-5">
             <Input
               id="email"
-              label="Correo electrónico"
-              type="email"
+              label="Correo o usuario"
+              type="text"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              placeholder="tu@correo.com"
-              autoComplete="email"
+              placeholder="usuario o tu@correo.com"
+              autoComplete="username"
             />
 
             <Input

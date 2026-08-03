@@ -10,6 +10,7 @@ import { UserRole } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { normalizeLoginIdentifier } from '../common/validators/login-identifier';
 
 @Injectable()
 export class UsersService {
@@ -49,17 +50,18 @@ export class UsersService {
   }
 
   async create(dto: CreateUserDto) {
+    const loginId = normalizeLoginIdentifier(dto.email);
     const existing = await this.prisma.user.findUnique({
-      where: { email: dto.email.toLowerCase().trim() },
+      where: { email: loginId },
     });
     if (existing) {
-      throw new ConflictException('Ese correo ya está registrado');
+      throw new ConflictException('Ese correo o usuario ya está registrado');
     }
 
     const passwordHash = await bcrypt.hash(dto.password, 10);
     const user = await this.prisma.user.create({
       data: {
-        email: dto.email.toLowerCase().trim(),
+        email: loginId,
         passwordHash,
         name: dto.name.trim(),
         role: dto.role,
@@ -73,12 +75,15 @@ export class UsersService {
     const user = await this.prisma.user.findUnique({ where: { id } });
     if (!user) throw new NotFoundException('Usuario no encontrado');
 
-    if (dto.email && dto.email.toLowerCase().trim() !== user.email) {
-      const existing = await this.prisma.user.findUnique({
-        where: { email: dto.email.toLowerCase().trim() },
-      });
-      if (existing) {
-        throw new ConflictException('Ese correo ya está registrado');
+    if (dto.email) {
+      const loginId = normalizeLoginIdentifier(dto.email);
+      if (loginId !== user.email) {
+        const existing = await this.prisma.user.findUnique({
+          where: { email: loginId },
+        });
+        if (existing) {
+          throw new ConflictException('Ese correo o usuario ya está registrado');
+        }
       }
     }
 
@@ -97,7 +102,7 @@ export class UsersService {
     const updated = await this.prisma.user.update({
       where: { id },
       data: {
-        email: dto.email?.toLowerCase().trim(),
+        email: dto.email ? normalizeLoginIdentifier(dto.email) : undefined,
         name: dto.name?.trim(),
         role: dto.role,
         isActive: dto.isActive,

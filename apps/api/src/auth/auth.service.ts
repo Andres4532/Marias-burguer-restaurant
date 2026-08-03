@@ -6,6 +6,7 @@ import { UserRole } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { LoginDto } from './dto/login.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { normalizeLoginIdentifier } from '../common/validators/login-identifier';
 export interface AuthResponse {
   accessToken: string;
   user: {
@@ -25,8 +26,9 @@ export class AuthService {
   ) {}
 
   async login(dto: LoginDto): Promise<AuthResponse> {
+    const loginId = normalizeLoginIdentifier(dto.email);
     const user = await this.prisma.user.findUnique({
-      where: { email: dto.email },
+      where: { email: loginId },
     });
 
     if (!user || !user.isActive) {

@@ -62,6 +62,9 @@ export default function CuentaPage() {
               <UserAvatar name={user.name} />
               <div className="min-w-0">
                 <p className="font-bold text-foreground text-lg">{user.name}</p>
+                <p className="text-xs font-bold uppercase tracking-wider text-text-secondary">
+                  Usuario / correo
+                </p>
                 <p className="text-sm text-text-secondary truncate">
                   {user.email}
                 </p>
