@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Card } from '@/components/ui/Card';
-import { Input } from '@/components/ui/Input';
 import { FilterChip } from '@/components/ui/FilterChip';
 import { CartPanel } from '@/components/pos/CartPanel';
 import { MobileCartBar, MobileCartDrawer } from '@/components/pos/MobileCartDrawer';
@@ -100,7 +99,7 @@ export default function PosPage() {
     ) {
       setError(
         cart.orderType === 'MESA'
-          ? 'Ingresa el nombre'
+          ? 'Ingresa el nombre por el que llaman'
           : 'Ingresa el nombre para recojo',
       );
       return;
@@ -203,21 +202,6 @@ export default function PosPage() {
                 </FilterChip>
               ))}
             </div>
-
-            {(cart.orderType === 'MESA' || cart.orderType === 'PARA_LLEVAR') && (
-              <div className="mt-4">
-                <Input
-                  label={
-                    cart.orderType === 'MESA'
-                      ? 'Nombre'
-                      : 'Nombre para recojo'
-                  }
-                  placeholder="Ej: Juan Pérez"
-                  value={cart.customerName}
-                  onChange={(e) => cart.setCustomerName(e.target.value)}
-                />
-              </div>
-            )}
 
             {cart.orderType === 'DELIVERY' && (
               <div className="mt-4">

@@ -157,3 +157,16 @@ export function canEditOrder(order: Order): boolean {
     !order.payment
   );
 }
+
+export function canCancelOrder(order: Order, isJefa: boolean): boolean {
+  if (order.status === 'CANCELADO' || order.status === 'ENTREGADO') {
+    return false;
+  }
+  if (order.payment) {
+    return false;
+  }
+  if (isJefa) {
+    return true;
+  }
+  return order.status === 'PENDIENTE';
+}

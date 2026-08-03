@@ -24,9 +24,12 @@ import {
   PAYMENT_METHOD_LABELS,
   getOrderSummary,
   canEditOrder,
+  canCancelOrder,
   type Order,
   type OrderStatus,
 } from '@/types/orders';
+import { useAuth } from '@/hooks/useAuth';
+import { isJefa } from '@/lib/auth';
 
 const NEXT_STATUS: Partial<Record<OrderStatus, OrderStatus>> = {
   EN_COCINA: 'LISTO',
@@ -40,6 +43,7 @@ const NEXT_STATUS_LABEL: Partial<Record<OrderStatus, string>> = {
 
 export default function PedidoDetallePage() {
   const { id } = useParams<{ id: string }>();
+  const { user } = useAuth();
   const [order, setOrder] = useState<Order | null>(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
@@ -103,6 +107,8 @@ export default function PedidoDetallePage() {
 
   const nextStatus = NEXT_STATUS[order.status];
   const isPaid = !!order.payment;
+  const userIsJefa = isJefa(user);
+  const showCancel = canCancelOrder(order, userIsJefa);
 
   return (
     <>
@@ -310,7 +316,7 @@ export default function PedidoDetallePage() {
                 </Button>
               )}
 
-              {order.status !== 'CANCELADO' && order.status !== 'ENTREGADO' && (
+              {showCancel && (
                 <Button
                   variant="danger"
                   onClick={handleCancel}
@@ -319,6 +325,23 @@ export default function PedidoDetallePage() {
                 >
                   Cancelar pedido
                 </Button>
+              )}
+
+              {!showCancel &&
+                order.status !== 'CANCELADO' &&
+                order.status !== 'ENTREGADO' &&
+                !isPaid &&
+                !userIsJefa && (
+                  <p className="text-xs text-text-secondary">
+                    Solo la jefa puede cancelar pedidos en cocina o por
+                    confirmar.
+                  </p>
+                )}
+
+              {isPaid && order.status !== 'CANCELADO' && (
+                <p className="text-xs text-text-secondary">
+                  Los pedidos cobrados no se pueden cancelar desde el sistema.
+                </p>
               )}
 
               {order.createdBy && (

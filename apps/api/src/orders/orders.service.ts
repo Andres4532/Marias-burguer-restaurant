@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { randomUUID } from 'crypto';
 import {
@@ -10,6 +11,7 @@ import {
   OrderSource,
   Prisma,
   PaymentStatus,
+  UserRole,
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateOrderDto } from './dto/create-order.dto';
@@ -18,6 +20,7 @@ import { UpdateMesaOrderDto } from './dto/update-mesa-order.dto';
 import { toNumber } from '../common/utils/decimal.util';
 import { TimezoneService } from '../common/timezone/timezone.service';
 import { EventsService } from '../events/events.service';
+import type { JwtPayloadUser } from '../common/decorators/current-user.decorator';
 
 @Injectable()
 export class OrdersService {
@@ -611,8 +614,26 @@ export class OrdersService {
     return this.mapOrder(order);
   }
 
-  async updateStatus(id: string, status: OrderStatus) {
+  async updateStatus(id: string, status: OrderStatus, user: JwtPayloadUser) {
     const order = await this.findOne(id);
+
+    if (status === OrderStatus.CANCELADO) {
+      if (order.payment) {
+        throw new BadRequestException(
+          'No se puede cancelar un pedido que ya fue cobrado. Contacta a la jefa.',
+        );
+      }
+
+      const cajeraCanCancel =
+        user.role === UserRole.CAJERA && order.status === OrderStatus.PENDIENTE;
+      const jefaCanCancel = user.role === UserRole.JEFA;
+
+      if (!cajeraCanCancel && !jefaCanCancel) {
+        throw new ForbiddenException(
+          'Solo la jefa puede cancelar pedidos en cocina o por confirmar.',
+        );
+      }
+    }
 
     const validTransitions: Record<OrderStatus, OrderStatus[]> = {
       PENDIENTE_CONFIRMACION: [OrderStatus.EN_COCINA, OrderStatus.CANCELADO],

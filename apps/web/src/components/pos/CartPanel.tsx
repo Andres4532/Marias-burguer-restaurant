@@ -129,6 +129,19 @@ export function CartPanel({
       )}
 
       <div className="mt-4 pt-4 border-t border-border space-y-3 shrink-0">
+        {(cart.orderType === 'MESA' || cart.orderType === 'PARA_LLEVAR') && (
+          <Input
+            label={
+              cart.orderType === 'MESA'
+                ? 'Nombre por el que llaman'
+                : 'Nombre para recojo'
+            }
+            placeholder="Ej: Juan Pérez"
+            value={cart.customerName}
+            onChange={(e) => cart.setCustomerName(e.target.value)}
+          />
+        )}
+
         <Input
           label="Notas del pedido"
           placeholder="Ej: sin cebolla"
