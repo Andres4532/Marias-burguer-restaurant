@@ -14,6 +14,7 @@ import {
   ORDER_TYPE_LABELS,
   PAYMENT_METHOD_LABELS,
   getOrderSummary,
+  canEditOrder,
   type Order,
   type OrderStatus,
   type OrderType,
@@ -194,6 +195,13 @@ export default function PedidosPage() {
                     </div>
                   </button>
                   <div className="flex shrink-0 flex-col gap-2 sm:flex-row sm:items-center">
+                    {canEditOrder(order) && (
+                      <Link href={`/pedidos/${order.id}/editar`}>
+                        <Button variant="secondary" className="w-full sm:w-auto">
+                          Editar
+                        </Button>
+                      </Link>
+                    )}
                     {canCharge && (
                       <Link href={`/cobro/${order.id}`}>
                         <Button className="w-full sm:w-auto">Cobrar →</Button>

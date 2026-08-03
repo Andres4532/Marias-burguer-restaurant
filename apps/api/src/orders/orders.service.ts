@@ -14,6 +14,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { CreatePublicOrderDto } from './dto/create-public-order.dto';
+import { UpdateMesaOrderDto } from './dto/update-mesa-order.dto';
 import { toNumber } from '../common/utils/decimal.util';
 import { TimezoneService } from '../common/timezone/timezone.service';
 import { EventsService } from '../events/events.service';
@@ -609,6 +610,122 @@ export class OrdersService {
             data: { status },
             include: this.orderInclude,
           });
+
+    return this.mapOrder(updated);
+  }
+
+  async updateMesaOrder(id: string, dto: UpdateMesaOrderDto) {
+    const existing = await this.prisma.order.findUnique({
+      where: { id },
+      include: { items: true, payments: { where: { status: PaymentStatus.PAGADO } } },
+    });
+
+    if (!existing) {
+      throw new NotFoundException('Pedido no encontrado');
+    }
+
+    if (existing.type !== OrderType.MESA) {
+      throw new BadRequestException(
+        'Solo se pueden editar pedidos de mesa',
+      );
+    }
+
+    if (existing.source !== OrderSource.CAJA) {
+      throw new BadRequestException(
+        'Los pedidos del menú público no se pueden editar',
+      );
+    }
+
+    if (existing.status !== OrderStatus.PENDIENTE) {
+      throw new BadRequestException(
+        'Solo se pueden editar pedidos pendientes de cobro',
+      );
+    }
+
+    if (existing.payments.length > 0) {
+      throw new BadRequestException('No se puede editar un pedido ya cobrado');
+    }
+
+    if (!dto.tableNumber?.trim()) {
+      throw new BadRequestException('El número de mesa es requerido');
+    }
+
+    const { subtotal, itemsData } = await this.buildItemsData(dto.items);
+
+    const updated = await this.prisma.$transaction(async (tx) => {
+      const oldQty = new Map<string, number>();
+      for (const item of existing.items) {
+        oldQty.set(
+          item.productId,
+          (oldQty.get(item.productId) ?? 0) + item.quantity,
+        );
+      }
+
+      const newQty = new Map<string, number>();
+      for (const item of itemsData) {
+        newQty.set(
+          item.productId,
+          (newQty.get(item.productId) ?? 0) + item.quantity,
+        );
+      }
+
+      const productIds = new Set([...oldQty.keys(), ...newQty.keys()]);
+      for (const productId of productIds) {
+        const delta = (newQty.get(productId) ?? 0) - (oldQty.get(productId) ?? 0);
+        if (delta === 0) continue;
+
+        const product = await tx.product.findUnique({ where: { id: productId } });
+        if (!product?.trackStock) continue;
+
+        if (delta > 0) {
+          const result = await tx.product.updateMany({
+            where: {
+              id: productId,
+              trackStock: true,
+              stockQuantity: { gte: delta },
+            },
+            data: { stockQuantity: { decrement: delta } },
+          });
+
+          if (result.count === 0) {
+            const current = await tx.product.findUnique({ where: { id: productId } });
+            throw new BadRequestException(
+              `Stock insuficiente: ${product.name} (quedan ${current?.stockQuantity ?? 0})`,
+            );
+          }
+        } else {
+          await tx.product.updateMany({
+            where: { id: productId, trackStock: true },
+            data: { stockQuantity: { increment: -delta } },
+          });
+        }
+      }
+
+      return tx.order.update({
+        where: { id },
+        data: {
+          tableNumber: dto.tableNumber.trim(),
+          notes: dto.notes,
+          subtotal,
+          total: subtotal,
+          items: {
+            deleteMany: {},
+            create: itemsData.map((item) => ({
+              productId: item.productId,
+              productName: item.productName,
+              unitPrice: item.unitPrice,
+              quantity: item.quantity,
+              lineTotal: item.lineTotal,
+              notes: item.notes,
+              extras: item.extras.length
+                ? { create: item.extras }
+                : undefined,
+            })),
+          },
+        },
+        include: this.orderInclude,
+      });
+    });
 
     return this.mapOrder(updated);
   }

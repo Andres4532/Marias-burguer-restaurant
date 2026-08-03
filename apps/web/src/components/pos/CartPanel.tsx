@@ -155,7 +155,7 @@ export function CartPanel({
           size="lg"
           className="w-full"
         >
-          {submitting ? 'Creando pedido...' : submitLabel}
+          {submitting ? 'Procesando...' : submitLabel}
         </Button>
       </div>
     </div>

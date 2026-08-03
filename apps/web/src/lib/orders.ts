@@ -1,6 +1,6 @@
 import { apiFetch } from './api-client';
 import { getToken } from './auth';
-import type { Order, CreateOrderInput, OrderStatus, PaymentMethod, OrderSource, OrderType, PayOrderBillingInput, Payment } from '@/types/orders';
+import type { Order, CreateOrderInput, UpdateMesaOrderInput, OrderStatus, PaymentMethod, OrderSource, OrderType, PayOrderBillingInput, Payment } from '@/types/orders';
 
 export interface PayOrderResponse {
   payment: Payment;
@@ -63,6 +63,13 @@ export const updateOrderStatus = (id: string, status: OrderStatus) =>
   apiFetch<Order>(
     `/orders/${id}/status`,
     { method: 'PATCH', body: JSON.stringify({ status }) },
+    token(),
+  );
+
+export const updateMesaOrder = (id: string, data: UpdateMesaOrderInput) =>
+  apiFetch<Order>(
+    `/orders/${id}`,
+    { method: 'PATCH', body: JSON.stringify(data) },
     token(),
   );
 

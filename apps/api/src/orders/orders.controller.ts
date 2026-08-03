@@ -13,6 +13,7 @@ import { OrderStatus, OrderSource, OrderType } from '@prisma/client';
 import { OrdersService } from './orders.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
+import { UpdateMesaOrderDto } from './dto/update-mesa-order.dto';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import type { JwtPayloadUser } from '../common/decorators/current-user.decorator';
 
@@ -55,6 +56,14 @@ export class OrdersController {
     @Body() dto: UpdateOrderStatusDto,
   ) {
     return this.ordersService.updateStatus(id, dto.status);
+  }
+
+  @Patch(':id')
+  updateMesaOrder(
+    @Param('id') id: string,
+    @Body() dto: UpdateMesaOrderDto,
+  ) {
+    return this.ordersService.updateMesaOrder(id, dto);
   }
 
   @Post(':id/confirm')

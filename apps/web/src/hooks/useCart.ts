@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import type { OrderType } from '@/types/orders';
+import type { Order, OrderType } from '@/types/orders';
 
 export interface CartExtra {
   id: string;
@@ -102,6 +102,37 @@ export function useCart() {
     setOrderType('MESA');
   }, []);
 
+  const loadFromOrder = useCallback((order: Order) => {
+    setOrderType('MESA');
+    setTableNumber(order.tableNumber ?? '');
+    setOrderNotes(order.notes ?? '');
+    setCustomerName('');
+    setCustomerPhone('');
+    setDeliveryAddress('');
+    setDeliveryReference('');
+    setDeliveryLatitude(null);
+    setDeliveryLongitude(null);
+    setItems(
+      order.items.map((item) => {
+        const extraIds = item.extras.map((extra) => extra.extraId);
+        const extrasTotal = item.extras.reduce((sum, extra) => sum + extra.price, 0);
+        return {
+          key: itemKey(item.productId, extraIds),
+          productId: item.productId,
+          productName: item.productName,
+          basePrice: item.unitPrice - extrasTotal,
+          quantity: item.quantity,
+          extras: item.extras.map((extra) => ({
+            id: extra.extraId,
+            name: extra.extraName,
+            price: extra.price,
+          })),
+          notes: item.notes ?? undefined,
+        };
+      }),
+    );
+  }, []);
+
   const subtotal = items.reduce(
     (sum, item) => sum + unitPrice(item) * item.quantity,
     0,
@@ -133,6 +164,7 @@ export function useCart() {
     updateQuantity,
     removeItem,
     clearCart,
+    loadFromOrder,
     subtotal,
     itemCount,
     unitPrice,

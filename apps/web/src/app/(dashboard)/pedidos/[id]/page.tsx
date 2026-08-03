@@ -23,6 +23,7 @@ import {
   ORDER_STATUS_LABELS,
   PAYMENT_METHOD_LABELS,
   getOrderSummary,
+  canEditOrder,
   type Order,
   type OrderStatus,
 } from '@/types/orders';
@@ -231,6 +232,14 @@ export default function PedidoDetallePage() {
           <Card className="h-fit" padding="lg">
             <h3 className="font-extrabold text-foreground mb-4">Acciones</h3>
             <div className="flex flex-col gap-4">
+              {canEditOrder(order) && (
+                <Link href={`/pedidos/${id}/editar`} className="block w-full">
+                  <Button variant="secondary" className="w-full" size="lg">
+                    Editar pedido
+                  </Button>
+                </Link>
+              )}
+
               {order.type === 'DELIVERY' &&
                 order.status !== 'CANCELADO' && (
                   <DeliveryHandoffButtons order={order} />

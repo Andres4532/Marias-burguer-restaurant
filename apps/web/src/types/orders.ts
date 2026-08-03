@@ -95,6 +95,12 @@ export interface CreateOrderInput {
   items: CreateOrderItemInput[];
 }
 
+export interface UpdateMesaOrderInput {
+  tableNumber: string;
+  notes?: string;
+  items: CreateOrderItemInput[];
+}
+
 export const ORDER_TYPE_LABELS: Record<OrderType, string> = {
   MESA: 'Mesa',
   PARA_LLEVAR: 'Para recojo',
@@ -134,4 +140,13 @@ export function getOrderSummary(order: Order): string {
   }
   if (order.customerName) return order.customerName;
   return ORDER_TYPE_LABELS[order.type];
+}
+
+export function canEditOrder(order: Order): boolean {
+  return (
+    order.type === 'MESA' &&
+    order.source === 'CAJA' &&
+    order.status === 'PENDIENTE' &&
+    !order.payment
+  );
 }
