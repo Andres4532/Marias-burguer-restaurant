@@ -141,7 +141,7 @@ export default function ConfiguracionPage() {
               value={logoUrl}
               onChange={setLogoUrl}
               onUpload={uploadLogo}
-              hint="Opcional. Sube una imagen desde tu computadora."
+              hint="Opcional. También se usa como icono de la pestaña del navegador."
               preview={
                 <div className="p-4 rounded-xl bg-background border border-border">
                   <RestaurantLogo
