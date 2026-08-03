@@ -145,7 +145,11 @@ export default function PublicMenuPage() {
   };
 
   const handleSubmitClick = () => {
-    if (!validateBeforeSubmit()) return;
+    if (!validateBeforeSubmit()) {
+      setCartOpen(true);
+      return;
+    }
+    setCartOpen(false);
     setConfirmOpen(true);
   };
 

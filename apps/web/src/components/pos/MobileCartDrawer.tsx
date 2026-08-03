@@ -2,6 +2,7 @@
 
 import type { ReactNode } from 'react';
 import { CartPanel } from '@/components/pos/CartPanel';
+import { FormError } from '@/components/ui/CrudForm';
 import { formatPrice } from '@/lib/catalog';
 import type { useCart, CartItem } from '@/hooks/useCart';
 
@@ -58,10 +59,15 @@ export function MobileCartDrawer({
           ×
         </button>
         <div
-          className={`overflow-hidden flex flex-col flex-1 min-h-0 ${
-            wide ? 'p-5 sm:p-6 pt-2' : 'p-4 pt-2'
+          className={`flex flex-col flex-1 min-h-0 overflow-y-auto overscroll-contain ${
+            wide ? 'p-5 sm:p-6 pt-2 pb-6' : 'p-4 pt-2 pb-6'
           }`}
         >
+          {error && (
+            <div className="mb-3 shrink-0">
+              <FormError message={error} />
+            </div>
+          )}
           {header}
           <CartPanel
             cart={cart}
