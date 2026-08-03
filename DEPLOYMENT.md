@@ -144,3 +144,26 @@ curl http://localhost:3001/api/v1/health
 | Reportes fecha incorrecta | Revisar `RESTAURANT_TIMEZONE` |
 | Puerto 5432 ocupado (Windows) | Docker usa puerto **5433** |
 | API no arranca | `JWT_SECRET` ≥ 32 caracteres en producción |
+| Imágenes rotas en Vercel | Usar Cloudinary en Render (ver abajo) o resubir tras redeploy |
+
+---
+
+## Imágenes en producción (Vercel + Render)
+
+En Render **gratis**, los archivos subidos al disco del contenedor **se pierden** al redeploy. La BD guarda la URL pero el archivo ya no existe → imagen rota.
+
+**Solución recomendada: Cloudinary** (plan gratis):
+
+1. Cuenta en [cloudinary.com](https://cloudinary.com)
+2. Dashboard → copiar **Cloud name**, **API Key**, **API Secret**
+3. En **Render** → Environment:
+   ```env
+   CLOUDINARY_CLOUD_NAME=tu_cloud
+   CLOUDINARY_API_KEY=...
+   CLOUDINARY_API_SECRET=...
+   CLOUDINARY_FOLDER=camis-burger
+   ```
+4. **Redeploy** la API en Render
+5. En el panel → **Productos** → **volver a subir** cada foto (las URLs viejas de Render siguen rotas)
+
+Sin Cloudinary, en local/Docker las fotos se guardan en `apps/api/uploads` con normalidad.

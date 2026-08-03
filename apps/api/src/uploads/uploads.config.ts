@@ -1,5 +1,5 @@
 import { BadRequestException } from '@nestjs/common';
-import { diskStorage } from 'multer';
+import { diskStorage, memoryStorage } from 'multer';
 import { randomUUID } from 'crypto';
 import { existsSync, mkdirSync } from 'fs';
 import { extname, join } from 'path';
@@ -10,6 +10,14 @@ import {
 } from './uploads.constants';
 
 export type UploadKind = 'products' | 'logos';
+
+export function isCloudinaryUploadEnabled(): boolean {
+  return Boolean(
+    process.env.CLOUDINARY_CLOUD_NAME &&
+      process.env.CLOUDINARY_API_KEY &&
+      process.env.CLOUDINARY_API_SECRET,
+  );
+}
 
 export function getUploadRootDir(): string {
   return process.env.UPLOAD_DIR ?? join(process.cwd(), 'uploads');
@@ -45,15 +53,19 @@ export function createImageUploadOptions(kind: UploadKind) {
       }
       cb(null, true);
     },
-    storage: diskStorage({
-      destination: (_req, _file, cb) => {
-        cb(null, getUploadKindDir(kind));
-      },
-      filename: (_req, file, cb) => {
-        const ext =
-          MIME_TO_EXT[file.mimetype] ?? extname(file.originalname) ?? '.jpg';
-        cb(null, `${randomUUID()}${ext}`);
-      },
-    }),
+    storage: isCloudinaryUploadEnabled()
+      ? memoryStorage()
+      : diskStorage({
+          destination: (_req, _file, cb) => {
+            cb(null, getUploadKindDir(kind));
+          },
+          filename: (_req, file, cb) => {
+            const ext =
+              MIME_TO_EXT[file.mimetype] ??
+              extname(file.originalname) ??
+              '.jpg';
+            cb(null, `${randomUUID()}${ext}`);
+          },
+        }),
   };
 }

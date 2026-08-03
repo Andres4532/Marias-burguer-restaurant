@@ -1,6 +1,8 @@
 'use client';
 
 import Image from 'next/image';
+import { useEffect, useState } from 'react';
+import { normalizeMediaUrl } from '@/lib/media-url';
 
 function DefaultIcon({ className }: { className?: string }) {
   return (
@@ -27,6 +29,13 @@ export function RestaurantLogo({
   subtitle?: string;
   size?: 'sm' | 'md' | 'lg';
 }) {
+  const resolvedLogo = normalizeMediaUrl(logoUrl);
+  const [loadFailed, setLoadFailed] = useState(false);
+
+  useEffect(() => {
+    setLoadFailed(false);
+  }, [resolvedLogo]);
+
   const boxSize =
     size === 'sm' ? 'size-9' : size === 'lg' ? 'size-14' : 'size-10';
   const titleSize =
@@ -41,14 +50,15 @@ export function RestaurantLogo({
       <div
         className={`relative flex ${boxSize} shrink-0 items-center justify-center overflow-hidden rounded-xl bg-primary/10 text-primary`}
       >
-        {logoUrl?.trim() ? (
+        {resolvedLogo && !loadFailed ? (
           <Image
-            src={logoUrl}
+            src={resolvedLogo}
             alt={`Logo ${name}`}
             fill
             className="object-cover"
             sizes="56px"
             unoptimized
+            onError={() => setLoadFailed(true)}
           />
         ) : (
           <DefaultIcon
