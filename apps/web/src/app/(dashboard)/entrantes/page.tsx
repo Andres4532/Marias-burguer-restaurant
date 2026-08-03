@@ -27,6 +27,9 @@ export default function EntrantesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
+  const [pendingWhatsApp, setPendingWhatsApp] = useState<
+    { id: string; phone: string; orderNumber: number }[]
+  >([]);
 
   const load = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
@@ -57,21 +60,42 @@ export default function EntrantesPage() {
     setError('');
     try {
       await confirmPublicOrder(order.id);
-      await load(true);
       if (order.customerPhone) {
-        const url = buildCustomerCookingWhatsAppUrl(
-          order.customerPhone,
-          order.orderNumber,
-          "Cami's burger",
-        );
-        openCustomerWhatsApp(url);
+        setPendingWhatsApp((prev) => {
+          if (prev.some((p) => p.id === order.id)) return prev;
+          return [
+            ...prev,
+            {
+              id: order.id,
+              phone: order.customerPhone!,
+              orderNumber: order.orderNumber,
+            },
+          ];
+        });
       }
+      await load(true);
     } catch (e) {
       setError(getErrorMessage(e));
     } finally {
       setConfirmingId(null);
     }
   };
+
+  const notifyWhatsApp = (entry: {
+    id: string;
+    phone: string;
+    orderNumber: number;
+  }) => {
+    const url = buildCustomerCookingWhatsAppUrl(
+      entry.phone,
+      entry.orderNumber,
+      "Cami's burger",
+    );
+    openCustomerWhatsApp(url);
+    setPendingWhatsApp((prev) => prev.filter((p) => p.id !== entry.id));
+  };
+
+  const dismissAllWhatsApp = () => setPendingWhatsApp([]);
 
   return (
     <div>
@@ -118,9 +142,44 @@ export default function EntrantesPage() {
         padding="sm"
         className="mb-4 bg-primary/5 border-primary/10 text-sm text-foreground"
       >
-        Los clientes piden desde el menú público. Revisa el pedido, confírmalo
-        para enviar a cocina y avisa por WhatsApp. Luego podés cobrar.
+        Confirma para enviar a cocina. El cliente ve el aviso en su página de
+        seguimiento. Si quieres, avísale también por WhatsApp (opcional, una
+        pestaña).
       </Card>
+
+      {pendingWhatsApp.length > 0 && (
+        <Card padding="sm" className="mb-4 border-green-200 bg-green-50">
+          <p className="text-sm font-semibold text-foreground mb-2">
+            Avisar por WhatsApp ({pendingWhatsApp.length})
+          </p>
+          <div className="flex flex-col gap-2">
+            {pendingWhatsApp.map((entry) => (
+              <div
+                key={entry.id}
+                className="flex flex-wrap items-center justify-between gap-2"
+              >
+                <span className="text-sm text-foreground">
+                  {formatOrderNumber(entry.orderNumber)} · {entry.phone}
+                </span>
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={() => notifyWhatsApp(entry)}
+                >
+                  Abrir WhatsApp
+                </Button>
+              </div>
+            ))}
+          </div>
+          <button
+            type="button"
+            onClick={dismissAllWhatsApp}
+            className="mt-3 text-xs text-text-secondary hover:text-foreground underline"
+          >
+            Omitir avisos por WhatsApp
+          </button>
+        </Card>
+      )}
 
       <Card padding="none" className="overflow-hidden">
         {loading ? (
