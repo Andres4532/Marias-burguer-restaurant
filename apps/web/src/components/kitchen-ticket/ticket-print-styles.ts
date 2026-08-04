@@ -22,7 +22,7 @@ export function buildTicketPrintCss(copyHeightsMm: number[]): string {
   const pageRules = copyHeightsMm
     .map(
       (heightMm, index) =>
-        `@page copy-page-${index} { size: 80mm ${heightMm}mm; margin: 1mm; }`,
+        `@page copy-page-${index} { size: 80mm ${heightMm}mm; margin: 0; }`,
     )
     .join('\n');
 

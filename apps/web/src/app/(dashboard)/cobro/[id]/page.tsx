@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Card';
 import { StatusBadge } from '@/components/orders/StatusBadge';
 import { KitchenTicketPrintSet, printKitchenTicket } from '@/components/kitchen-ticket/KitchenTicket';
+import { TicketPrintHint } from '@/components/kitchen-ticket/TicketPrintHint';
 import { TicketPreviewModal } from '@/components/kitchen-ticket/TicketPreviewModal';
 import { getOrder, payOrder, formatOrderNumber } from '@/lib/orders';
 import { formatPrice, getErrorMessage } from '@/lib/catalog';
@@ -336,6 +337,8 @@ export default function CobroPage() {
                 <Button onClick={printKitchenTicket} className="w-full" size="lg">
                   Imprimir ticket de cocina
                 </Button>
+
+                <TicketPrintHint />
 
                 <Button
                   variant="secondary"

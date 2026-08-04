@@ -7,6 +7,7 @@ import {
   TICKET_COPIES,
   printKitchenTicket,
 } from '@/components/kitchen-ticket/KitchenTicket';
+import { TicketPrintHint } from '@/components/kitchen-ticket/TicketPrintHint';
 import type { Order } from '@/types/orders';
 
 interface TicketPreviewModalProps {
@@ -28,9 +29,9 @@ export function TicketPreviewModal({ order, open, onClose }: TicketPreviewModalP
             ))}
           </div>
         </div>
+        <TicketPrintHint />
         <p className="text-xs text-gray-500 text-center">
-          Se imprimen 3 tickets separados (Cocina, Caja, Cliente). La impresora
-          corta al final de cada uno. En el diálogo usa Copias: 1 — verás 3/3 páginas.
+          3 tickets separados (Cocina, Caja, Cliente). Copias: 1 en el diálogo.
         </p>
         <div className="flex gap-2">
           <Button

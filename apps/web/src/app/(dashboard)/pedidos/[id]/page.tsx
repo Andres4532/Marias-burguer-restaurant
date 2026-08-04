@@ -10,6 +10,7 @@ import { StatusBadge } from '@/components/orders/StatusBadge';
 import { DeliveryMapLinks } from '@/components/orders/DeliveryMapLinks';
 import { DeliveryHandoffButtons } from '@/components/orders/DeliveryHandoffButtons';
 import { KitchenTicketPrintSet, printKitchenTicket } from '@/components/kitchen-ticket/KitchenTicket';
+import { TicketPrintHint } from '@/components/kitchen-ticket/TicketPrintHint';
 import { TicketPreviewModal } from '@/components/kitchen-ticket/TicketPreviewModal';
 import {
   getOrder,
@@ -306,6 +307,7 @@ export default function PedidoDetallePage() {
                   >
                     Imprimir ticket cocina
                   </Button>
+                  <TicketPrintHint />
                 </>
               )}
 

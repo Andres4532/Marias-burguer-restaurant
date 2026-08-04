@@ -158,7 +158,6 @@ export function KitchenTicketPrintSet({ order }: { order: Order }) {
 export function printKitchenTicket() {
   const root = document.getElementById('kitchen-ticket-print-set');
   if (!root || !root.innerHTML.trim()) {
-    window.print();
     return;
   }
 
@@ -174,13 +173,12 @@ export function printKitchenTicket() {
   const doc = win?.document;
   if (!doc) {
     iframe.remove();
-    window.print();
     return;
   }
 
   doc.open();
   doc.write(
-    '<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><title>Ticket</title></head><body></body></html>',
+    '<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><title></title></head><body></body></html>',
   );
   doc.close();
 
