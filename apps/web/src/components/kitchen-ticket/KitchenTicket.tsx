@@ -5,7 +5,7 @@ import { ORDER_TYPE_LABELS, PAYMENT_METHOD_LABELS } from '@/types/orders';
 import { getGoogleMapsUrl, hasDeliveryCoordinates } from '@/lib/maps';
 import {
   buildTicketPrintCss,
-  measureTicketHeightMm,
+  measureSingleCopyPageHeightMm,
 } from './ticket-print-styles';
 
 export const TICKET_COPIES = ['COCINA', 'CAJA', 'CLIENTE'] as const;
@@ -146,14 +146,9 @@ export function KitchenTicket({ order, copyLabel = 'COCINA' }: KitchenTicketProp
 export function KitchenTicketPrintSet({ order }: { order: Order }) {
   return (
     <div id="kitchen-ticket-print-set" className="kitchen-ticket-print-set">
-      {TICKET_COPIES.map((copyLabel, index) => (
+      {TICKET_COPIES.map((copyLabel) => (
         <div key={copyLabel} className="kitchen-ticket-copy">
           <KitchenTicket order={order} copyLabel={copyLabel} />
-          {index < TICKET_COPIES.length - 1 && (
-            <div className="ticket-copy-gap" aria-hidden="true">
-              <p className="ticket-cut-line">- - - - - - - - - -</p>
-            </div>
-          )}
         </div>
       ))}
     </div>
@@ -167,7 +162,7 @@ export function printKitchenTicket() {
     return;
   }
 
-  const pageHeightMm = measureTicketHeightMm(root);
+  const pageHeightMm = measureSingleCopyPageHeightMm(root);
 
   const iframe = document.createElement('iframe');
   iframe.setAttribute('aria-hidden', 'true');
