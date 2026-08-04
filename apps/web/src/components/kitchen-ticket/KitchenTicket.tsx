@@ -5,7 +5,7 @@ import { ORDER_TYPE_LABELS, PAYMENT_METHOD_LABELS } from '@/types/orders';
 import { getGoogleMapsUrl, hasDeliveryCoordinates } from '@/lib/maps';
 import {
   buildTicketPrintCss,
-  measureMaxCopyHeightMm,
+  measureCopyHeightsMm,
 } from './ticket-print-styles';
 
 export const TICKET_COPIES = ['COCINA', 'CAJA', 'CLIENTE'] as const;
@@ -162,7 +162,7 @@ export function printKitchenTicket() {
     return;
   }
 
-  const pageHeightMm = measureMaxCopyHeightMm(root);
+  const copyHeightsMm = measureCopyHeightsMm(root);
 
   const iframe = document.createElement('iframe');
   iframe.setAttribute('aria-hidden', 'true');
@@ -185,7 +185,7 @@ export function printKitchenTicket() {
   doc.close();
 
   const style = doc.createElement('style');
-  style.textContent = buildTicketPrintCss(pageHeightMm);
+  style.textContent = buildTicketPrintCss(copyHeightsMm);
   doc.head.appendChild(style);
 
   const clone = root.cloneNode(true) as HTMLElement;
