@@ -377,11 +377,14 @@ export class OrdersService {
       total: toNumber(order.total),
       updatedAt: order.updatedAt,
       customerName: order.customerName,
-      message: this.getPublicTrackingMessage(order.status),
+      message: this.getPublicTrackingMessage(order.status, order.type),
     };
   }
 
-  private getPublicTrackingMessage(status: OrderStatus): string {
+  private getPublicTrackingMessage(
+    status: OrderStatus,
+    type: OrderType = OrderType.MESA,
+  ): string {
     switch (status) {
       case OrderStatus.PENDIENTE_CONFIRMACION:
         return 'Esperando confirmación del restaurante…';
@@ -390,7 +393,9 @@ export class OrdersService {
       case OrderStatus.EN_COCINA:
         return '¡Tu pedido se está preparando!';
       case OrderStatus.LISTO:
-        return '¡Tu pedido está listo!';
+        return type === OrderType.DELIVERY
+          ? '¡Tu pedido va en camino!'
+          : '¡Tu pedido está listo!';
       case OrderStatus.ENTREGADO:
         return 'Pedido entregado. ¡Gracias!';
       case OrderStatus.CANCELADO:

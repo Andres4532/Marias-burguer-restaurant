@@ -32,16 +32,27 @@ import {
 } from '@/types/orders';
 import { useAuth } from '@/hooks/useAuth';
 import { isJefa } from '@/lib/auth';
+import { notifyCustomerByWhatsApp } from '@/lib/customer-notify';
+import { getSettings } from '@/lib/settings';
 
 const NEXT_STATUS: Partial<Record<OrderStatus, OrderStatus>> = {
   EN_COCINA: 'LISTO',
   LISTO: 'ENTREGADO',
 };
 
-const NEXT_STATUS_LABEL: Partial<Record<OrderStatus, string>> = {
-  EN_COCINA: 'Marcar listo',
-  LISTO: 'Marcar entregado',
-};
+function getNextStatusLabel(order: Order): string | undefined {
+  if (order.status === 'EN_COCINA') {
+    return order.type === 'DELIVERY'
+      ? 'En camino · avisar cliente'
+      : 'Marcar listo';
+  }
+
+  if (order.status === 'LISTO') {
+    return 'Marcar entregado';
+  }
+
+  return undefined;
+}
 
 export default function PedidoDetallePage() {
   const { id } = useParams<{ id: string }>();
@@ -51,6 +62,7 @@ export default function PedidoDetallePage() {
   const [updating, setUpdating] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [error, setError] = useState('');
+  const [restaurantName, setRestaurantName] = useState('Mi Restaurante');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -68,11 +80,32 @@ export default function PedidoDetallePage() {
     load();
   }, [load]);
 
+  useEffect(() => {
+    getSettings()
+      .then((settings) => setRestaurantName(settings.name))
+      .catch(() => {});
+  }, []);
+
   const handleStatusChange = async (status: OrderStatus) => {
+    if (!order) return;
+
     setUpdating(true);
     try {
       const updated = await updateOrderStatus(id, status);
       setOrder(updated);
+
+      if (
+        status === 'LISTO' &&
+        order.type === 'DELIVERY' &&
+        order.customerPhone
+      ) {
+        notifyCustomerByWhatsApp(
+          'ON_THE_WAY',
+          order.customerPhone,
+          order.orderNumber,
+          restaurantName,
+        );
+      }
     } catch (e) {
       alert(getErrorMessage(e));
     } finally {
@@ -108,6 +141,7 @@ export default function PedidoDetallePage() {
   }
 
   const nextStatus = NEXT_STATUS[order.status];
+  const nextStatusLabel = getNextStatusLabel(order);
   const isPaid = !!order.payment;
   const userIsJefa = isJefa(user);
   const showCancel = canCancelOrder(order, userIsJefa);
@@ -311,15 +345,24 @@ export default function PedidoDetallePage() {
                 </>
               )}
 
-              {nextStatus && (
+              {nextStatus && nextStatusLabel && (
                 <Button
                   onClick={() => handleStatusChange(nextStatus)}
                   disabled={updating}
                   className="w-full"
                 >
-                  {updating ? 'Actualizando...' : NEXT_STATUS_LABEL[order.status]}
+                  {updating ? 'Actualizando...' : nextStatusLabel}
                 </Button>
               )}
+
+              {order.type === 'DELIVERY' &&
+                order.status === 'EN_COCINA' &&
+                order.customerPhone && (
+                  <p className="text-xs text-text-secondary">
+                    Al marcar en camino se abrirá WhatsApp al cliente (
+                    {order.customerPhone}) con el aviso de delivery.
+                  </p>
+                )}
 
               {showCancel && (
                 <Button

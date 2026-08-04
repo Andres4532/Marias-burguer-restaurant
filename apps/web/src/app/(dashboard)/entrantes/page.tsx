@@ -11,9 +11,9 @@ import { useEntrantesAlerts } from '@/components/entrantes/EntrantesAlertsProvid
 import { getOrders, confirmPublicOrder, formatOrderNumber, formatTime } from '@/lib/orders';
 import { formatPrice, getErrorMessage } from '@/lib/catalog';
 import {
-  buildCustomerCookingWhatsAppUrl,
-  openCustomerWhatsApp,
+  notifyCustomerByWhatsApp,
 } from '@/lib/customer-notify';
+import { getSettings } from '@/lib/settings';
 import {
   ORDER_TYPE_LABELS,
   getOrderSummary,
@@ -28,6 +28,13 @@ export default function EntrantesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
+  const [restaurantName, setRestaurantName] = useState('Mi Restaurante');
+
+  useEffect(() => {
+    getSettings()
+      .then((settings) => setRestaurantName(settings.name))
+      .catch(() => {});
+  }, []);
 
   const load = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
@@ -59,14 +66,12 @@ export default function EntrantesPage() {
     try {
       await confirmPublicOrder(order.id);
       await load(true);
-      if (order.customerPhone) {
-        const url = buildCustomerCookingWhatsAppUrl(
-          order.customerPhone,
-          order.orderNumber,
-          "Cami's burger",
-        );
-        openCustomerWhatsApp(url);
-      }
+      notifyCustomerByWhatsApp(
+        'COOKING',
+        order.customerPhone,
+        order.orderNumber,
+        restaurantName,
+      );
     } catch (e) {
       setError(getErrorMessage(e));
     } finally {
@@ -120,7 +125,9 @@ export default function EntrantesPage() {
         className="mb-4 bg-primary/5 border-primary/10 text-sm text-foreground"
       >
         Los clientes piden desde el menú público. Revisa el pedido, confírmalo
-        para enviar a cocina y avisa por WhatsApp. Luego podés cobrar.
+        para enviar a cocina y avisa por WhatsApp. En delivery, al marcar
+        &quot;En camino&quot; en el detalle del pedido se abre otro WhatsApp al
+        cliente.
       </Card>
 
       <Card padding="none" className="overflow-hidden">
