@@ -21,7 +21,7 @@ function getTicketContext(order: Order) {
   if (order.type === 'MESA') {
     headline = mesaName || 'MESA';
   } else if (order.type === 'PARA_LLEVAR') {
-    headline = pickupName || 'PARA RECOJO';
+    headline = pickupName ? `RECOJO ${pickupName}` : 'PARA RECOJO';
   } else if (order.type === 'DELIVERY') {
     headline = order.customerName?.trim() || 'DELIVERY';
   } else {
@@ -44,32 +44,7 @@ export function KitchenTicket({ order, copyLabel = 'COCINA' }: KitchenTicketProp
         {order.type === 'DELIVERY' && (
           <p className="ticket-type">{typeLabel.toUpperCase()}</p>
         )}
-        {order.type === 'PARA_LLEVAR' && pickupName && (
-          <p className="ticket-type">{typeLabel.toUpperCase()}</p>
-        )}
       </header>
-
-      {order.type === 'MESA' && mesaName && (
-        <>
-          <hr className="ticket-divider" />
-          <div className="ticket-block">
-            <p className="ticket-name-line">
-              <span className="ticket-label">Nombre:</span> {mesaName}
-            </p>
-          </div>
-        </>
-      )}
-
-      {order.type === 'PARA_LLEVAR' && pickupName && (
-        <>
-          <hr className="ticket-divider" />
-          <div className="ticket-block">
-            <p className="ticket-name-line">
-              <span className="ticket-label">Recojo:</span> {pickupName}
-            </p>
-          </div>
-        </>
-      )}
 
       {order.type === 'DELIVERY' && (
         <>
