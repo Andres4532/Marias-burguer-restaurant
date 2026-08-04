@@ -257,12 +257,11 @@ body {
   .kitchen-ticket-print-set,
   .kitchen-ticket-copy {
     overflow: visible !important;
-    page-break-inside: auto !important;
-    break-inside: auto !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
   }
 
   @page {
-    size: 80mm auto;
     margin: 2mm;
   }
 }

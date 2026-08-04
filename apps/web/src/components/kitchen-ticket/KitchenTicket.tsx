@@ -3,6 +3,10 @@ import { formatOrderNumber, formatTime } from '@/lib/orders';
 import { formatPrice } from '@/lib/catalog';
 import { ORDER_TYPE_LABELS, PAYMENT_METHOD_LABELS } from '@/types/orders';
 import { getGoogleMapsUrl, hasDeliveryCoordinates } from '@/lib/maps';
+import {
+  buildTicketPrintCss,
+  measureTicketHeightMm,
+} from './ticket-print-styles';
 
 export const TICKET_COPIES = ['COCINA', 'CAJA', 'CLIENTE'] as const;
 export type TicketCopyLabel = (typeof TICKET_COPIES)[number];
@@ -157,5 +161,45 @@ export function KitchenTicketPrintSet({ order }: { order: Order }) {
 }
 
 export function printKitchenTicket() {
-  window.print();
+  const root = document.getElementById('kitchen-ticket-print-set');
+  if (!root || !root.innerHTML.trim()) {
+    window.print();
+    return;
+  }
+
+  const pageHeightMm = measureTicketHeightMm(root);
+
+  const iframe = document.createElement('iframe');
+  iframe.setAttribute('aria-hidden', 'true');
+  iframe.style.cssText =
+    'position:fixed;left:0;top:0;width:80mm;height:100vh;border:0;z-index:-1;opacity:0;pointer-events:none';
+  document.body.appendChild(iframe);
+
+  const win = iframe.contentWindow;
+  const doc = win?.document;
+  if (!doc) {
+    iframe.remove();
+    window.print();
+    return;
+  }
+
+  doc.open();
+  doc.write(
+    '<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><title>Ticket</title></head><body></body></html>',
+  );
+  doc.close();
+
+  const style = doc.createElement('style');
+  style.textContent = buildTicketPrintCss(pageHeightMm);
+  doc.head.appendChild(style);
+
+  const clone = root.cloneNode(true) as HTMLElement;
+  clone.removeAttribute('id');
+  doc.body.appendChild(clone);
+
+  window.setTimeout(() => {
+    win?.focus();
+    win?.print();
+    window.setTimeout(() => iframe.remove(), 2000);
+  }, 400);
 }
