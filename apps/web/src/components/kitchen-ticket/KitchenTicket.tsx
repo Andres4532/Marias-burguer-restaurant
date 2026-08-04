@@ -12,35 +12,45 @@ interface KitchenTicketProps {
   copyLabel?: TicketCopyLabel;
 }
 
-export function KitchenTicket({ order, copyLabel = 'COCINA' }: KitchenTicketProps) {
+function getTicketContext(order: Order) {
   const typeLabel = ORDER_TYPE_LABELS[order.type];
   const pickupName = order.customerName?.trim() || null;
   const mesaName = pickupName || order.tableNumber?.trim() || null;
-  const destination =
-    order.type === 'MESA'
-      ? mesaName || typeLabel
-      : order.type === 'PARA_LLEVAR'
-        ? pickupName || typeLabel
-        : order.type === 'DELIVERY'
-          ? 'DELIVERY'
-          : typeLabel;
+
+  let headline = '';
+  if (order.type === 'MESA') {
+    headline = mesaName || 'MESA';
+  } else if (order.type === 'PARA_LLEVAR') {
+    headline = pickupName || 'PARA RECOJO';
+  } else if (order.type === 'DELIVERY') {
+    headline = order.customerName?.trim() || 'DELIVERY';
+  } else {
+    headline = typeLabel.toUpperCase();
+  }
+
+  return { typeLabel, pickupName, mesaName, headline };
+}
+
+export function KitchenTicket({ order, copyLabel = 'COCINA' }: KitchenTicketProps) {
+  const { typeLabel, pickupName, mesaName, headline } = getTicketContext(order);
 
   return (
-    <div className="kitchen-ticket">
-      <div className="ticket-header">
-        <h1 className="ticket-title">{copyLabel}</h1>
+    <article className="kitchen-ticket">
+      <header className="ticket-header">
+        <p className="ticket-title">{copyLabel}</p>
         <p className="ticket-order">{formatOrderNumber(order.orderNumber)}</p>
         <p className="ticket-time">{formatTime(order.createdAt)}</p>
-        <p className="ticket-destination">{destination}</p>
-        <p className="ticket-type">{typeLabel.toUpperCase()}</p>
-      </div>
+        <p className="ticket-destination">{headline}</p>
+        {order.type !== 'MESA' && (
+          <p className="ticket-type">{typeLabel.toUpperCase()}</p>
+        )}
+      </header>
 
       {order.type === 'MESA' && mesaName && (
         <>
           <hr className="ticket-divider" />
-          <div className="ticket-delivery">
-            <p className="ticket-delivery-title">MESA</p>
-            <p className="ticket-delivery-line ticket-name-line">
+          <div className="ticket-block">
+            <p className="ticket-name-line">
               <span className="ticket-label">Nombre:</span> {mesaName}
             </p>
           </div>
@@ -50,10 +60,9 @@ export function KitchenTicket({ order, copyLabel = 'COCINA' }: KitchenTicketProp
       {order.type === 'PARA_LLEVAR' && pickupName && (
         <>
           <hr className="ticket-divider" />
-          <div className="ticket-delivery">
-            <p className="ticket-delivery-title">PARA RECOJO</p>
-            <p className="ticket-delivery-line ticket-name-line">
-              <span className="ticket-label">Nombre:</span> {pickupName}
+          <div className="ticket-block">
+            <p className="ticket-name-line">
+              <span className="ticket-label">Recojo:</span> {pickupName}
             </p>
           </div>
         </>
@@ -62,25 +71,24 @@ export function KitchenTicket({ order, copyLabel = 'COCINA' }: KitchenTicketProp
       {order.type === 'DELIVERY' && (
         <>
           <hr className="ticket-divider" />
-          <div className="ticket-delivery">
-            <p className="ticket-delivery-title">DATOS DE ENTREGA</p>
+          <div className="ticket-block">
             {order.customerName && (
-              <p className="ticket-delivery-line ticket-name-line">
+              <p className="ticket-line ticket-name-line">
                 <span className="ticket-label">Cliente:</span> {order.customerName}
               </p>
             )}
             {order.customerPhone && (
-              <p className="ticket-delivery-line">
+              <p className="ticket-line">
                 <span className="ticket-label">Tel:</span> {order.customerPhone}
               </p>
             )}
             {order.deliveryAddress && (
-              <p className="ticket-delivery-line">
+              <p className="ticket-line">
                 <span className="ticket-label">Dir:</span> {order.deliveryAddress}
               </p>
             )}
             {order.deliveryReference && (
-              <p className="ticket-delivery-line">
+              <p className="ticket-line">
                 <span className="ticket-label">Ref:</span> {order.deliveryReference}
               </p>
             )}
@@ -88,7 +96,7 @@ export function KitchenTicket({ order, copyLabel = 'COCINA' }: KitchenTicketProp
               order.deliveryLatitude,
               order.deliveryLongitude,
             ) && (
-              <p className="ticket-delivery-line">
+              <p className="ticket-line ticket-line-wrap">
                 <span className="ticket-label">Maps:</span>{' '}
                 {getGoogleMapsUrl(
                   order.deliveryLatitude!,
@@ -102,11 +110,11 @@ export function KitchenTicket({ order, copyLabel = 'COCINA' }: KitchenTicketProp
 
       <hr className="ticket-divider" />
 
-      <div className="ticket-items">
+      <section className="ticket-items">
         {order.items.map((item) => (
           <div key={item.id} className="ticket-item">
             <p className="ticket-item-name">
-              <span className="ticket-qty">{item.quantity}×</span> {item.productName}
+              <span className="ticket-qty">{item.quantity}x</span> {item.productName}
             </p>
             {item.extras.length > 0 && (
               <ul className="ticket-extras">
@@ -120,7 +128,7 @@ export function KitchenTicket({ order, copyLabel = 'COCINA' }: KitchenTicketProp
             )}
           </div>
         ))}
-      </div>
+      </section>
 
       {order.notes && (
         <>
@@ -133,19 +141,23 @@ export function KitchenTicket({ order, copyLabel = 'COCINA' }: KitchenTicketProp
 
       <hr className="ticket-divider" />
 
-      <p className="ticket-total">TOTAL: {formatPrice(order.total)}</p>
+      <p className="ticket-total">{formatPrice(order.total)}</p>
       {order.payment && (
-        <p className="ticket-total-paid">
-          COBRADO · {PAYMENT_METHOD_LABELS[order.payment.method]} ·{' '}
-          {formatPrice(order.payment.amount)}
-        </p>
+        <div className="ticket-payment">
+          <p className="ticket-payment-line">
+            COBRADO: {PAYMENT_METHOD_LABELS[order.payment.method]}
+          </p>
+          <p className="ticket-payment-line">
+            RECIBIDO: {formatPrice(order.payment.amount)}
+          </p>
+        </div>
       )}
 
       <hr className="ticket-divider" />
       <p className="ticket-footer">
-        {formatOrderNumber(order.orderNumber)} — {destination} — {copyLabel}
+        {formatOrderNumber(order.orderNumber)} · {copyLabel}
       </p>
-    </div>
+    </article>
   );
 }
 
@@ -153,13 +165,13 @@ export function KitchenTicketPrintSet({ order }: { order: Order }) {
   return (
     <div id="kitchen-ticket-print-set" className="kitchen-ticket-print-set">
       {TICKET_COPIES.map((copyLabel, index) => (
-        <div
-          key={copyLabel}
-          className={
-            index < TICKET_COPIES.length - 1 ? 'kitchen-ticket-copy' : undefined
-          }
-        >
+        <div key={copyLabel} className="kitchen-ticket-copy">
           <KitchenTicket order={order} copyLabel={copyLabel} />
+          {index < TICKET_COPIES.length - 1 && (
+            <div className="ticket-copy-gap" aria-hidden="true">
+              <p className="ticket-cut-line">- - - - - - - - - -</p>
+            </div>
+          )}
         </div>
       ))}
     </div>

@@ -22,13 +22,15 @@ export function TicketPreviewModal({ order, open, onClose }: TicketPreviewModalP
         <div className="border-2 border-dashed border-gray-300 rounded-lg p-3 bg-gray-50 max-h-[60vh] overflow-y-auto">
           <div className="mx-auto space-y-6" style={{ maxWidth: '80mm' }}>
             {TICKET_COPIES.map((copyLabel) => (
-              <KitchenTicket key={copyLabel} order={order} copyLabel={copyLabel} />
+              <div key={copyLabel} className="mb-8 pb-6 border-b-2 border-dashed border-gray-300 last:border-0 last:mb-0 last:pb-0">
+                <KitchenTicket order={order} copyLabel={copyLabel} />
+              </div>
             ))}
           </div>
         </div>
         <p className="text-xs text-gray-500 text-center">
-          Se imprimen 3 copias: Cocina, Caja y Cliente. Verifica productos y notas antes
-          de imprimir.
+          Se imprimen 3 copias seguidas (Cocina, Caja, Cliente) en una sola tira para
+          impresora térmica. En el diálogo de impresión usa Copias: 1.
         </p>
         <div className="flex gap-2">
           <Button
