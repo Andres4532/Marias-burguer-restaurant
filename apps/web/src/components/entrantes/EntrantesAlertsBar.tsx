@@ -7,10 +7,12 @@ import { useEntrantesAlerts } from './EntrantesAlertsProvider';
 
 export function EntrantesAlertsBar() {
   const pathname = usePathname();
-  const { live, alertsEnabled, newOrderCount, enableAlerts } =
+  const { live, alertsEnabled, newOrderCount, deliveryNewCount, enableAlerts } =
     useEntrantesAlerts();
 
-  if (pathname.startsWith('/entrantes')) return null;
+  if (pathname.startsWith('/entrantes') || pathname.startsWith('/delivery')) {
+    return null;
+  }
 
   return (
     <div className="mb-4 flex flex-wrap items-center gap-2">
@@ -24,7 +26,7 @@ export function EntrantesAlertsBar() {
             live ? 'bg-green-500 animate-pulse' : 'bg-yellow-500'
           }`}
         />
-        {live ? 'Entrantes en vivo' : 'Reconectando entrantes...'}
+        {live ? 'Pedidos en vivo' : 'Reconectando...'}
       </span>
 
       {!alertsEnabled && (
@@ -33,12 +35,21 @@ export function EntrantesAlertsBar() {
         </Button>
       )}
 
+      {deliveryNewCount > 0 && (
+        <Link
+          href="/delivery"
+          className="text-xs font-bold text-indigo-700 bg-indigo-100 px-2.5 py-1 rounded-full hover:bg-indigo-200/80 transition"
+        >
+          {deliveryNewCount} delivery nuevo(s) →
+        </Link>
+      )}
+
       {newOrderCount > 0 && (
         <Link
           href="/entrantes"
           className="text-xs font-bold text-primary bg-primary/10 px-2.5 py-1 rounded-full hover:bg-primary/15 transition"
         >
-          {newOrderCount} pedido(s) nuevo(s) →
+          {newOrderCount} recojo(s) nuevo(s) →
         </Link>
       )}
     </div>

@@ -17,22 +17,28 @@ interface QuickLink {
 
 const cajeraLinks: QuickLink[] = [
   {
+    href: '/delivery',
+    title: 'Delivery',
+    description: 'Control paso a paso de pedidos a domicilio',
+    icon: 'delivery',
+    highlight: true,
+  },
+  {
     href: '/pos',
     title: 'Nuevo pedido',
     description: 'Mesa, para recojo o delivery',
     icon: 'pos',
-    highlight: true,
   },
   {
     href: '/entrantes',
-    title: 'Entrantes',
-    description: 'Pedidos del menú público',
+    title: 'Recojo entrante',
+    description: 'Pedidos para recojo del menú público',
     icon: 'entrantes',
   },
   {
     href: '/pedidos',
     title: 'Pedidos del día',
-    description: 'Ver estado y cobrar',
+    description: 'Historial y detalle',
     icon: 'pedidos',
   },
 ];
@@ -197,7 +203,7 @@ export default function DashboardPage() {
           <span className="font-bold text-foreground">Tip:</span>{' '}
           {isJefa
             ? 'Configura el logo y las imágenes de productos para que el menú público y el POS se vean más profesionales.'
-            : 'Los pedidos del menú público aparecen en Entrantes con aviso en tiempo real.'}
+            : 'Usa Delivery para domicilios, Recojo para pedidos para llevar y POS para mesa.'}
         </p>
       </Card>
     </div>

@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
@@ -49,6 +49,8 @@ function suggestCashAmounts(total: number): number[] {
 export default function CobroPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const fromDeliveryPanel = searchParams.get('from') === 'delivery';
   const [order, setOrder] = useState<Order | null>(null);
   const [method, setMethod] = useState<PaymentMethod>('EFECTIVO');
   const [amountReceived, setAmountReceived] = useState('');
@@ -192,6 +194,7 @@ export default function CobroPage() {
 
   const summary = getOrderSummary(order);
   const needsKitchenConfirm = order.status === 'PENDIENTE_CONFIRMACION';
+  const isDeliveryOrder = order.type === 'DELIVERY' || fromDeliveryPanel;
 
   const billingBlock = order.payment?.billingNit ? (
     <div className="rounded-xl border border-border bg-background p-3 text-sm">
@@ -322,7 +325,11 @@ export default function CobroPage() {
                   )}
                   {billingBlock && <div className="mt-4 text-left">{billingBlock}</div>}
                   <p className="text-green-600 text-xs mt-3 font-bold">
-                    Pedido enviado a cocina
+                    {isDeliveryOrder
+                      ? 'Cobro registrado. Continúa en Delivery.'
+                      : order.status === 'PENDIENTE'
+                        ? 'Pedido enviado a cocina'
+                        : 'Cobro registrado correctamente'}
                   </p>
                 </div>
 
@@ -340,13 +347,23 @@ export default function CobroPage() {
 
                 <TicketPrintHint />
 
-                <Button
-                  variant="secondary"
-                  onClick={() => router.push(`/pedidos/${id}`)}
-                  className="w-full"
-                >
-                  Ver detalle del pedido
-                </Button>
+                {isDeliveryOrder ? (
+                  <Button
+                    onClick={() => router.push('/delivery')}
+                    className="w-full"
+                    size="lg"
+                  >
+                    Volver a Delivery
+                  </Button>
+                ) : (
+                  <Button
+                    variant="secondary"
+                    onClick={() => router.push(`/pedidos/${id}`)}
+                    className="w-full"
+                  >
+                    Ver detalle del pedido
+                  </Button>
+                )}
               </div>
             ) : needsKitchenConfirm ? (
               <div className="space-y-4 py-6 text-center">
@@ -354,12 +371,16 @@ export default function CobroPage() {
                   Confirma cocina primero
                 </p>
                 <p className="text-sm text-text-secondary">
-                  Este pedido del menú público aún no fue enviado a cocina. Confírmalo
-                  en Entrantes y luego podrás cobrar.
+                  {isDeliveryOrder
+                    ? 'Confírmalo primero en la pantalla Delivery y luego podrás cobrar.'
+                    : 'Este pedido del menú público aún no fue enviado a cocina. Confírmalo en Recojo y luego podrás cobrar.'}
                 </p>
-                <Link href="/entrantes" className="inline-flex">
+                <Link
+                  href={isDeliveryOrder ? '/delivery' : '/entrantes'}
+                  className="inline-flex"
+                >
                   <Button variant="success" size="lg">
-                    Ir a Entrantes
+                    {isDeliveryOrder ? 'Ir a Delivery' : 'Ir a Recojo'}
                   </Button>
                 </Link>
               </div>

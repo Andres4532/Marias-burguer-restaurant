@@ -4,8 +4,9 @@ export interface NavItem {
   icon:
     | 'home'
     | 'pos'
-    | 'entrantes'
-    | 'pedidos'
+  | 'entrantes'
+  | 'delivery'
+  | 'pedidos'
     | 'reportes'
     | 'usuarios'
     | 'config'
@@ -18,7 +19,8 @@ export interface NavItem {
 export const jefaNavItems: NavItem[] = [
   { href: '/dashboard', label: 'Inicio', icon: 'home' },
   { href: '/pos', label: 'POS', icon: 'pos' },
-  { href: '/entrantes', label: 'Entrantes', icon: 'entrantes' },
+  { href: '/delivery', label: 'Delivery', icon: 'delivery' },
+  { href: '/entrantes', label: 'Recojo', icon: 'entrantes' },
   { href: '/pedidos', label: 'Pedidos', icon: 'pedidos' },
   { href: '/reportes', label: 'Reportes', icon: 'reportes' },
   { href: '/usuarios', label: 'Usuarios', icon: 'usuarios' },
@@ -31,23 +33,24 @@ export const jefaNavItems: NavItem[] = [
 
 export const cajeraNavItems: NavItem[] = [
   { href: '/dashboard', label: 'Inicio', icon: 'home' },
+  { href: '/delivery', label: 'Delivery', icon: 'delivery' },
   { href: '/pos', label: 'POS', icon: 'pos' },
-  { href: '/entrantes', label: 'Entrantes', icon: 'entrantes' },
   { href: '/pedidos', label: 'Pedidos', icon: 'pedidos' },
 ];
 
 export const jefaMobileNavItems: NavItem[] = [
   { href: '/dashboard', label: 'Inicio', icon: 'home' },
+  { href: '/delivery', label: 'Delivery', icon: 'delivery' },
   { href: '/pos', label: 'POS', icon: 'pos' },
-  { href: '/entrantes', label: 'Entrantes', icon: 'entrantes' },
+  { href: '/entrantes', label: 'Recojo', icon: 'entrantes' },
   { href: '/pedidos', label: 'Pedidos', icon: 'pedidos' },
-  { href: '/reportes', label: 'Reportes', icon: 'reportes' },
 ];
 
 export function isNavActive(pathname: string, href: string): boolean {
   if (pathname === href) return true;
   if (href === '/pedidos' && pathname.startsWith('/pedidos')) return true;
   if (href === '/entrantes' && pathname.startsWith('/entrantes')) return true;
+  if (href === '/delivery' && pathname.startsWith('/delivery')) return true;
   if (href === '/pos' && pathname.startsWith('/pos')) return true;
   if (href === '/usuarios' && pathname.startsWith('/usuarios')) return true;
   if (href === '/configuracion' && pathname.startsWith('/configuracion')) return true;

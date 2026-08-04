@@ -6,7 +6,6 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { StatusBadge } from '@/components/orders/StatusBadge';
-import { DeliveryHandoffButtons } from '@/components/orders/DeliveryHandoffButtons';
 import { useEntrantesAlerts } from '@/components/entrantes/EntrantesAlertsProvider';
 import { getEntrantesOrders, confirmPublicOrder, formatOrderNumber, formatTime } from '@/lib/orders';
 import { formatPrice, getErrorMessage } from '@/lib/catalog';
@@ -39,7 +38,9 @@ export default function EntrantesPage() {
   const load = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
     try {
-      const data = await getEntrantesOrders();
+      const data = (await getEntrantesOrders()).filter(
+        (order) => order.type !== 'DELIVERY',
+      );
       data.sort((a, b) => {
         const aPending = a.status === 'PENDIENTE_CONFIRMACION' ? 1 : 0;
         const bPending = b.status === 'PENDIENTE_CONFIRMACION' ? 1 : 0;
@@ -98,8 +99,8 @@ export default function EntrantesPage() {
   return (
     <div>
       <PageHeader
-        title="Entrantes"
-        description="Pedidos del menú público en tiempo real"
+        title="Recojo entrante"
+        description="Pedidos para recojo del menú público"
         action={
           <div className="flex gap-2 flex-wrap">
             {!alertsEnabled && (
@@ -140,8 +141,8 @@ export default function EntrantesPage() {
         padding="sm"
         className="mb-4 bg-primary/5 border-primary/10 text-sm text-foreground"
       >
-        Los clientes piden desde el menú público. El pedido permanece aquí hasta
-        que lo cobres. Confírmalo para cocina, avisa por WhatsApp y luego cobra.
+        Pedidos <strong>para recojo</strong> del menú público. Los{' '}
+        <strong>delivery</strong> se gestionan en la pantalla Delivery.
       </Card>
 
       <Card padding="none" className="overflow-hidden">
@@ -152,7 +153,7 @@ export default function EntrantesPage() {
         ) : orders.length === 0 ? (
           <div className="p-10 text-center">
             <p className="text-text-secondary font-medium">
-              No hay pedidos entrantes por ahora.
+              No hay recojos entrantes por ahora.
             </p>
             <p className="text-sm text-text-secondary/80 mt-2">
               Te avisaremos al instante cuando llegue uno
@@ -178,11 +179,6 @@ export default function EntrantesPage() {
                     <span className="text-xs font-bold bg-purple-100 text-purple-700 px-2.5 py-1 rounded-full">
                       Menú público
                     </span>
-                    {order.type === 'DELIVERY' && (
-                      <span className="text-xs font-bold bg-indigo-100 text-indigo-700 px-2.5 py-1 rounded-full">
-                        Delivery
-                      </span>
-                    )}
                   </div>
                   <p className="text-sm text-foreground mt-1 font-semibold">
                     {getOrderSummary(order)}
@@ -203,9 +199,6 @@ export default function EntrantesPage() {
                     {formatPrice(order.total)}
                   </p>
                   <div className="flex flex-row flex-wrap items-center justify-end gap-2">
-                    {order.type === 'DELIVERY' && (
-                      <DeliveryHandoffButtons order={order} layout="row" />
-                    )}
                     {needsConfirm ? (
                       <Button
                         variant="success"

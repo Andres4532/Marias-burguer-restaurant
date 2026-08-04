@@ -21,6 +21,7 @@ interface EntrantesAlertsContextValue {
   live: boolean;
   alertsEnabled: boolean;
   newOrderCount: number;
+  deliveryNewCount: number;
   enableAlerts: () => Promise<void>;
   resetNewOrderCount: () => void;
 }
@@ -29,6 +30,7 @@ const EntrantesAlertsContext = createContext<EntrantesAlertsContextValue>({
   live: false,
   alertsEnabled: false,
   newOrderCount: 0,
+  deliveryNewCount: 0,
   enableAlerts: async () => {},
   resetNewOrderCount: () => {},
 });
@@ -45,6 +47,7 @@ export function EntrantesAlertsProvider({
   const [live, setLive] = useState(false);
   const [alertsEnabled, setAlertsEnabled] = useState(false);
   const [newOrderCount, setNewOrderCount] = useState(0);
+  const [deliveryNewCount, setDeliveryNewCount] = useState(0);
   const knownIds = useRef(new Set<string>());
   const alertsEnabledRef = useRef(alertsEnabled);
 
@@ -60,6 +63,7 @@ export function EntrantesAlertsProvider({
 
   const resetNewOrderCount = useCallback(() => {
     setNewOrderCount(0);
+    setDeliveryNewCount(0);
   }, []);
 
   useEffect(() => {
@@ -108,7 +112,12 @@ export function EntrantesAlertsProvider({
                   event.order.customerName ?? undefined,
                 );
               }
-              setNewOrderCount((count) => count + 1);
+
+              if (event.order.type === 'DELIVERY') {
+                setDeliveryNewCount((count) => count + 1);
+              } else {
+                setNewOrderCount((count) => count + 1);
+              }
             }
           }
         }, controller.signal);
@@ -135,6 +144,7 @@ export function EntrantesAlertsProvider({
         live,
         alertsEnabled,
         newOrderCount,
+        deliveryNewCount,
         enableAlerts,
         resetNewOrderCount,
       }}
