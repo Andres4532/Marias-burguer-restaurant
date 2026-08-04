@@ -27,45 +27,53 @@ body {
   font-family: var(--font-manrope), system-ui, sans-serif;
 }
 
-/* Ticket térmico 80mm (Rongta RP80) */
+/* Ticket térmico 80mm (Rongta RP80) — una sola tira continua, sin page-break */
 .kitchen-ticket-print-area {
   position: absolute;
   left: -9999px;
   top: 0;
-  width: 76mm;
+  width: 72mm;
   overflow: visible;
 }
 
 .kitchen-ticket-print-set {
-  width: 76mm;
-  max-width: 76mm;
+  width: 72mm;
+  max-width: 72mm;
   background: #fff;
 }
 
 .kitchen-ticket-copy {
   display: block;
   width: 100%;
-  margin-bottom: 8mm;
-  padding-bottom: 4mm;
-  border-bottom: 2px dashed #ccc;
 }
 
-.kitchen-ticket-copy:last-child {
-  margin-bottom: 0;
-  border-bottom: none;
+.ticket-copy-gap {
+  display: block;
+  padding: 10mm 0 8mm;
+  margin: 0;
+  text-align: center;
+}
+
+.ticket-cut-line {
+  margin: 0;
+  font-family: 'Courier New', Courier, monospace;
+  font-size: 12px;
+  font-weight: 900;
+  color: #000;
+  letter-spacing: 0.1em;
 }
 
 .kitchen-ticket {
   box-sizing: border-box;
   width: 100%;
-  max-width: 76mm;
+  max-width: 72mm;
   font-family: 'Courier New', Courier, monospace;
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 700;
   color: #000 !important;
   background: #fff !important;
-  padding: 1mm 0;
-  line-height: 1.45;
+  padding: 2mm 1mm;
+  line-height: 1.4;
   overflow: visible;
   -webkit-print-color-adjust: exact;
   print-color-adjust: exact;
@@ -84,7 +92,7 @@ body {
 
 .ticket-title {
   display: block;
-  font-size: 20px;
+  font-size: 16px;
   font-weight: 900;
   margin: 0 0 2mm;
   letter-spacing: 0.08em;
@@ -92,21 +100,21 @@ body {
 
 .ticket-order {
   display: block;
-  font-size: 26px;
+  font-size: 20px;
   font-weight: 900;
   margin: 0 0 2mm;
 }
 
 .ticket-time {
   display: block;
-  font-size: 15px;
+  font-size: 13px;
   font-weight: 900;
   margin: 0 0 2mm;
 }
 
 .ticket-destination {
   display: block;
-  font-size: 17px;
+  font-size: 14px;
   font-weight: 900;
   margin: 0 0 1mm;
   text-transform: uppercase;
@@ -115,7 +123,7 @@ body {
 
 .ticket-type {
   display: block;
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 900;
   margin: 0;
   letter-spacing: 0.04em;
@@ -144,7 +152,7 @@ body {
 
 .ticket-item-name {
   display: block;
-  font-size: 17px;
+  font-size: 14px;
   font-weight: 900;
   margin: 0;
   line-height: 1.35;
@@ -157,7 +165,7 @@ body {
   display: block;
   margin: 1mm 0 0 3mm;
   padding: 0;
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 800;
   list-style: none;
 }
@@ -172,11 +180,11 @@ body {
 .ticket-order-note,
 .ticket-line {
   display: block;
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 800;
   font-style: normal;
   margin: 1mm 0;
-  line-height: 1.4;
+  line-height: 1.35;
   word-wrap: break-word;
 }
 
@@ -185,7 +193,7 @@ body {
 }
 
 .ticket-name-line {
-  font-size: 17px;
+  font-size: 14px;
   font-weight: 900;
 }
 
@@ -194,7 +202,7 @@ body {
 .ticket-total {
   display: block;
   text-align: center;
-  font-size: 20px;
+  font-size: 16px;
   font-weight: 900;
   margin: 2mm 0;
 }
@@ -202,7 +210,7 @@ body {
 .ticket-payment-line {
   display: block;
   text-align: center;
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 900;
   margin: 1mm 0;
 }
@@ -210,7 +218,7 @@ body {
 .ticket-footer {
   display: block;
   text-align: center;
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 800;
   margin: 0;
 }
@@ -238,19 +246,31 @@ body {
     position: absolute !important;
     left: 0 !important;
     top: 0 !important;
-    width: 76mm !important;
-    max-width: 76mm !important;
+    width: 72mm !important;
+    max-width: 72mm !important;
     margin: 0 !important;
     padding: 0 !important;
     overflow: visible !important;
   }
 
   .kitchen-ticket,
-  .kitchen-ticket-print-set,
-  .kitchen-ticket-copy {
+  .kitchen-ticket-print-set {
     overflow: visible !important;
     page-break-inside: avoid !important;
     break-inside: avoid !important;
+  }
+
+  .kitchen-ticket-copy {
+    overflow: visible !important;
+    page-break-after: always !important;
+    break-after: page !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  .kitchen-ticket-copy:last-child {
+    page-break-after: auto !important;
+    break-after: auto !important;
   }
 
   @page {
