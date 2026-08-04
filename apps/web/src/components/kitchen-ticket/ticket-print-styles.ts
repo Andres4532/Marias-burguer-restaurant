@@ -1,39 +1,29 @@
-function measureNodeHeightMm(node: HTMLElement): number {
-  const probe = document.createElement('div');
-  probe.style.cssText =
-    'position:absolute;left:-9999px;top:0;width:72mm;visibility:hidden;pointer-events:none';
-  const clone = node.cloneNode(true) as HTMLElement;
-  probe.appendChild(clone);
-  document.body.appendChild(probe);
-  const px = probe.scrollHeight;
-  probe.remove();
-  return Math.ceil((px * 25.4) / 96) + 4;
+const PX_PER_MM = 96 / 25.4;
+
+function pxToMm(px: number): number {
+  return Math.ceil(px / PX_PER_MM);
 }
 
-export function measureCopyHeightsMm(root: HTMLElement): number[] {
+export function measureTicketPageHeightMm(root: HTMLElement): number {
   const copies = root.querySelectorAll('.kitchen-ticket-copy');
-  return Array.from(copies).map((copy) => {
-    const mm = measureNodeHeightMm(copy as HTMLElement);
-    return Math.min(Math.max(mm, 55), 1200);
+  let maxPx = 0;
+
+  copies.forEach((copy) => {
+    const el = copy as HTMLElement;
+    maxPx = Math.max(maxPx, el.scrollHeight, el.offsetHeight);
   });
+
+  if (maxPx === 0) {
+    return 80;
+  }
+
+  return Math.min(Math.max(pxToMm(maxPx) + 2, 40), 1200);
 }
 
-export function buildTicketPrintCss(copyHeightsMm: number[]): string {
-  const pageRules = copyHeightsMm
-    .map(
-      (heightMm, index) =>
-        `@page copy-page-${index} { size: 80mm ${heightMm}mm; margin: 0; }`,
-    )
-    .join('\n');
-
-  const copyPageAssignments = copyHeightsMm
-    .map(
-      (_, index) =>
-        `.kitchen-ticket-copy:nth-of-type(${index + 1}) { page: copy-page-${index}; }`,
-    )
-    .join('\n');
-
+export function buildTicketPrintCss(pageHeightMm: number): string {
   return `
+  @page { size: 80mm ${pageHeightMm}mm; margin: 0; }
+
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
   html, body {
@@ -45,10 +35,6 @@ export function buildTicketPrintCss(copyHeightsMm: number[]): string {
     background: #fff;
     color: #000;
   }
-
-  ${pageRules}
-
-  ${copyPageAssignments}
 
   .kitchen-ticket-print-set {
     width: 72mm;

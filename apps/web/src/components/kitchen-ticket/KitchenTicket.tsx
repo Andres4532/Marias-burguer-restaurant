@@ -5,7 +5,7 @@ import { ORDER_TYPE_LABELS, PAYMENT_METHOD_LABELS } from '@/types/orders';
 import { getGoogleMapsUrl, hasDeliveryCoordinates } from '@/lib/maps';
 import {
   buildTicketPrintCss,
-  measureCopyHeightsMm,
+  measureTicketPageHeightMm,
 } from './ticket-print-styles';
 
 export const TICKET_COPIES = ['COCINA', 'CAJA', 'CLIENTE'] as const;
@@ -161,12 +161,10 @@ export function printKitchenTicket() {
     return;
   }
 
-  const copyHeightsMm = measureCopyHeightsMm(root);
-
   const iframe = document.createElement('iframe');
   iframe.setAttribute('aria-hidden', 'true');
   iframe.style.cssText =
-    'position:fixed;left:0;top:0;width:80mm;height:100vh;border:0;z-index:-1;opacity:0;pointer-events:none';
+    'position:fixed;left:0;top:0;width:0;height:0;border:0;z-index:-1;opacity:0;pointer-events:none';
   document.body.appendChild(iframe);
 
   const win = iframe.contentWindow;
@@ -183,16 +181,22 @@ export function printKitchenTicket() {
   doc.close();
 
   const style = doc.createElement('style');
-  style.textContent = buildTicketPrintCss(copyHeightsMm);
   doc.head.appendChild(style);
 
   const clone = root.cloneNode(true) as HTMLElement;
   clone.removeAttribute('id');
   doc.body.appendChild(clone);
 
-  window.setTimeout(() => {
-    win?.focus();
-    win?.print();
-    window.setTimeout(() => iframe.remove(), 2000);
-  }, 400);
+  style.textContent = buildTicketPrintCss(300);
+
+  window.requestAnimationFrame(() => {
+    const pageHeightMm = measureTicketPageHeightMm(clone);
+    style.textContent = buildTicketPrintCss(pageHeightMm);
+
+    window.setTimeout(() => {
+      win?.focus();
+      win?.print();
+      window.setTimeout(() => iframe.remove(), 2000);
+    }, 150);
+  });
 }
