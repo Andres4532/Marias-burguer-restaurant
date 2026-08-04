@@ -587,10 +587,17 @@ export class OrdersService {
     todayOnly = true,
     source?: OrderSource,
     type?: OrderType,
+    unpaid = false,
   ) {
     const where: Prisma.OrderWhereInput = {};
 
-    if (status) where.status = status;
+    if (unpaid) {
+      where.payments = { none: { status: PaymentStatus.PAGADO } };
+      where.status = { not: OrderStatus.CANCELADO };
+    } else if (status) {
+      where.status = status;
+    }
+
     if (source) where.source = source;
     if (type) where.type = type;
 

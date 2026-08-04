@@ -36,12 +36,14 @@ export class OrdersController {
     @Query('source') source?: OrderSource,
     @Query('type') type?: OrderType,
     @Query('today') today?: string,
+    @Query('unpaid') unpaid?: string,
   ) {
     return this.ordersService.findAll(
       status,
       today !== 'false',
       source,
       type,
+      unpaid === 'true',
     );
   }
 

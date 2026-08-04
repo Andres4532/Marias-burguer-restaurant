@@ -8,7 +8,7 @@ import { Card } from '@/components/ui/Card';
 import { StatusBadge } from '@/components/orders/StatusBadge';
 import { DeliveryHandoffButtons } from '@/components/orders/DeliveryHandoffButtons';
 import { useEntrantesAlerts } from '@/components/entrantes/EntrantesAlertsProvider';
-import { getOrders, confirmPublicOrder, formatOrderNumber, formatTime } from '@/lib/orders';
+import { getEntrantesOrders, confirmPublicOrder, formatOrderNumber, formatTime } from '@/lib/orders';
 import { formatPrice, getErrorMessage } from '@/lib/catalog';
 import {
   notifyCustomerByWhatsApp,
@@ -39,7 +39,13 @@ export default function EntrantesPage() {
   const load = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
     try {
-      const data = await getOrders('PENDIENTE_CONFIRMACION', true, 'MENU_PUBLICO');
+      const data = await getEntrantesOrders();
+      data.sort((a, b) => {
+        const aPending = a.status === 'PENDIENTE_CONFIRMACION' ? 1 : 0;
+        const bPending = b.status === 'PENDIENTE_CONFIRMACION' ? 1 : 0;
+        if (aPending !== bPending) return bPending - aPending;
+        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+      });
       setOrders(data);
       setError('');
     } catch (e) {
@@ -59,6 +65,16 @@ export default function EntrantesPage() {
       load(true);
     }
   }, [newOrderCount, load]);
+
+  useEffect(() => {
+    const refreshOnReturn = () => {
+      if (document.visibilityState === 'visible') {
+        load(true);
+      }
+    };
+    document.addEventListener('visibilitychange', refreshOnReturn);
+    return () => document.removeEventListener('visibilitychange', refreshOnReturn);
+  }, [load]);
 
   const handleConfirm = async (order: Order) => {
     setConfirmingId(order.id);
@@ -124,10 +140,8 @@ export default function EntrantesPage() {
         padding="sm"
         className="mb-4 bg-primary/5 border-primary/10 text-sm text-foreground"
       >
-        Los clientes piden desde el menú público. Revisa el pedido, confírmalo
-        para enviar a cocina y avisa por WhatsApp. En delivery, al marcar
-        &quot;En camino&quot; en el detalle del pedido se abre otro WhatsApp al
-        cliente.
+        Los clientes piden desde el menú público. El pedido permanece aquí hasta
+        que lo cobres. Confírmalo para cocina, avisa por WhatsApp y luego cobra.
       </Card>
 
       <Card padding="none" className="overflow-hidden">
@@ -148,6 +162,7 @@ export default function EntrantesPage() {
           <div className="divide-y divide-border">
             {orders.map((order) => {
               const canCharge = canChargeOrder(order);
+              const needsConfirm = order.status === 'PENDIENTE_CONFIRMACION';
 
               return (
               <div
@@ -191,16 +206,22 @@ export default function EntrantesPage() {
                     {order.type === 'DELIVERY' && (
                       <DeliveryHandoffButtons order={order} layout="row" />
                     )}
-                    <Button
-                      variant="success"
-                      size="md"
-                      disabled={confirmingId === order.id}
-                      onClick={() => void handleConfirm(order)}
-                    >
-                      {confirmingId === order.id
-                        ? 'Confirmando…'
-                        : 'Confirmar → cocina'}
-                    </Button>
+                    {needsConfirm ? (
+                      <Button
+                        variant="success"
+                        size="md"
+                        disabled={confirmingId === order.id}
+                        onClick={() => void handleConfirm(order)}
+                      >
+                        {confirmingId === order.id
+                          ? 'Confirmando…'
+                          : 'Confirmar → cocina'}
+                      </Button>
+                    ) : (
+                      <Button variant="secondary" size="md" disabled>
+                        En cocina
+                      </Button>
+                    )}
                     <Link href={`/pedidos/${order.id}`} className="inline-flex">
                       <Button variant="secondary" size="md">
                         Ver detalle

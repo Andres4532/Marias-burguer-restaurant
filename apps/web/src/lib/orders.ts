@@ -21,13 +21,18 @@ export const getOrders = (
   today = true,
   source?: OrderSource,
   type?: OrderType,
+  unpaid = false,
 ) => {
   const params = new URLSearchParams({ today: String(today) });
   if (status) params.set('status', status);
   if (source) params.set('source', source);
   if (type) params.set('type', type);
+  if (unpaid) params.set('unpaid', 'true');
   return apiFetch<Order[]>(`/orders?${params}`, {}, token());
 };
+
+export const getEntrantesOrders = () =>
+  getOrders(undefined, true, 'MENU_PUBLICO', undefined, true);
 
 export const getOrder = (id: string) =>
   apiFetch<Order>(`/orders/${id}`, {}, token());
