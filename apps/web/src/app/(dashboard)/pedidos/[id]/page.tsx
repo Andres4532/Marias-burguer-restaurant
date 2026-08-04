@@ -43,7 +43,7 @@ const NEXT_STATUS: Partial<Record<OrderStatus, OrderStatus>> = {
 function getNextStatusLabel(order: Order): string | undefined {
   if (order.status === 'EN_COCINA') {
     return order.type === 'DELIVERY'
-      ? 'En camino · avisar cliente'
+      ? 'Marcar listo · avisar salida'
       : 'Marcar listo';
   }
 
@@ -357,10 +357,21 @@ export default function PedidoDetallePage() {
 
               {order.type === 'DELIVERY' &&
                 order.status === 'EN_COCINA' &&
-                order.customerPhone && (
+                order.customerPhone &&
+                order.payment && (
                   <p className="text-xs text-text-secondary">
-                    Al marcar en camino se abrirá WhatsApp al cliente (
-                    {order.customerPhone}) con el aviso de delivery.
+                    Al marcar listo se abrirá WhatsApp al cliente (
+                    {order.customerPhone}) avisando que el repartidor salió.
+                  </p>
+                )}
+
+              {order.type === 'DELIVERY' &&
+                !order.payment &&
+                order.status !== 'PENDIENTE_CONFIRMACION' &&
+                order.status !== 'CANCELADO' && (
+                  <p className="text-xs text-text-secondary">
+                    Cobrá al repartidor cuando llegue, aunque cocina aún prepare
+                    el pedido. Usá la pantalla Delivery.
                   </p>
                 )}
 

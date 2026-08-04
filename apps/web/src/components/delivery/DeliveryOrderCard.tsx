@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/Button';
 import { formatPrice } from '@/lib/catalog';
 import { formatOrderNumber, formatTime } from '@/lib/orders';
 import { copyDeliveryWhatsAppMessage } from '@/lib/delivery-handoff';
-import { getDeliveryWorkflowStep } from '@/lib/delivery-workflow';
+import { getDeliveryWorkflowStep, shouldShowSpeedHandoff } from '@/lib/delivery-workflow';
 import { DeliveryMapLinks } from '@/components/orders/DeliveryMapLinks';
 import type { Order } from '@/types/orders';
 
@@ -107,14 +107,14 @@ export function DeliveryOrderCard({
       )}
 
       <div className="mt-3 flex flex-wrap gap-2">
-        {(workflow.action === 'dispatch' || workflow.action === 'deliver') && (
+        {shouldShowSpeedHandoff(order) && (
           <Button
             type="button"
             variant="secondary"
             size="sm"
             onClick={() => void handleCopySpeed()}
           >
-            {copied ? '¡Copiado!' : 'Copiar para repartidor'}
+            {copied ? '¡Copiado!' : 'Copiar para Speed'}
           </Button>
         )}
         <DeliveryMapLinks

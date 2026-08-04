@@ -3,7 +3,7 @@ import type { Order } from '@/types/orders';
 export type DeliveryWorkflowAction =
   | 'confirm'
   | 'charge'
-  | 'dispatch'
+  | 'ready'
   | 'deliver'
   | 'done';
 
@@ -35,8 +35,8 @@ export function getDeliveryWorkflowStep(order: Order): DeliveryWorkflowStep {
       totalSteps: 4,
       phaseLabel: 'Nuevo',
       action: 'confirm',
-      actionLabel: 'Confirmar y avisar cliente',
-      hint: 'Envía a cocina y abre WhatsApp: se está preparando',
+      actionLabel: 'Confirmar y pedir Speed',
+      hint: 'Envía a cocina, avisa al cliente y copia el pedido para Speed',
     };
   }
 
@@ -44,10 +44,10 @@ export function getDeliveryWorkflowStep(order: Order): DeliveryWorkflowStep {
     return {
       step: 2,
       totalSteps: 4,
-      phaseLabel: 'Sin cobrar',
+      phaseLabel: 'Esperando repartidor',
       action: 'charge',
-      actionLabel: 'Cobrar pedido',
-      hint: 'Registra el pago antes de despachar',
+      actionLabel: 'Cobrar al repartidor',
+      hint: 'Cuando llegue Speed, cobrá aunque el pedido aún se esté preparando',
     };
   }
 
@@ -55,10 +55,10 @@ export function getDeliveryWorkflowStep(order: Order): DeliveryWorkflowStep {
     return {
       step: 3,
       totalSteps: 4,
-      phaseLabel: 'En cocina',
-      action: 'dispatch',
-      actionLabel: 'En camino · avisar cliente',
-      hint: 'WhatsApp al cliente + copia para el repartidor',
+      phaseLabel: 'Preparando',
+      action: 'ready',
+      actionLabel: 'Marcar listo · avisar salida',
+      hint: 'La comida está lista: el repartidor sale y se avisa al cliente',
     };
   }
 
@@ -69,6 +69,7 @@ export function getDeliveryWorkflowStep(order: Order): DeliveryWorkflowStep {
       phaseLabel: 'En camino',
       action: 'deliver',
       actionLabel: 'Marcar entregado',
+      hint: 'Confirmá que el repartidor entregó al cliente',
     };
   }
 
@@ -78,7 +79,7 @@ export function getDeliveryWorkflowStep(order: Order): DeliveryWorkflowStep {
 export interface DeliverySections {
   confirm: Order[];
   charge: Order[];
-  dispatch: Order[];
+  ready: Order[];
   deliver: Order[];
 }
 
@@ -86,7 +87,7 @@ export function groupDeliveryOrders(orders: Order[]): DeliverySections {
   const sections: DeliverySections = {
     confirm: [],
     charge: [],
-    dispatch: [],
+    ready: [],
     deliver: [],
   };
 
@@ -98,7 +99,7 @@ export function groupDeliveryOrders(orders: Order[]): DeliverySections {
     const { action } = getDeliveryWorkflowStep(order);
     if (action === 'confirm') sections.confirm.push(order);
     else if (action === 'charge') sections.charge.push(order);
-    else if (action === 'dispatch') sections.dispatch.push(order);
+    else if (action === 'ready') sections.ready.push(order);
     else if (action === 'deliver') sections.deliver.push(order);
   }
 
@@ -112,4 +113,14 @@ export function countActiveDeliveryOrders(orders: Order[]): number {
       order.status !== 'ENTREGADO' &&
       order.status !== 'CANCELADO',
   ).length;
+}
+
+export function shouldShowSpeedHandoff(order: Order): boolean {
+  const { action } = getDeliveryWorkflowStep(order);
+  return (
+    action === 'confirm' ||
+    action === 'charge' ||
+    action === 'ready' ||
+    action === 'deliver'
+  );
 }

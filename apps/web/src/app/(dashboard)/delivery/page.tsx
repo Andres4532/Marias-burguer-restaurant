@@ -13,6 +13,7 @@ import {
   updateOrderStatus,
 } from '@/lib/orders';
 import { getErrorMessage } from '@/lib/catalog';
+import { copyDeliveryWhatsAppMessage } from '@/lib/delivery-handoff';
 import {
   countActiveDeliveryOrders,
   getDeliveryWorkflowStep,
@@ -23,15 +24,32 @@ import { getSettings } from '@/lib/settings';
 import type { Order } from '@/types/orders';
 
 const SECTION_META = [
-  { key: 'confirm' as const, title: '1. Nuevos', emoji: '🆕' },
-  { key: 'charge' as const, title: '2. Por cobrar', emoji: '💳' },
-  { key: 'dispatch' as const, title: '3. En cocina', emoji: '👨‍🍳' },
-  { key: 'deliver' as const, title: '4. En camino', emoji: '🛵' },
+  {
+    key: 'confirm' as const,
+    title: '1. Confirmar y pedir Speed',
+    emoji: '🆕',
+  },
+  {
+    key: 'charge' as const,
+    title: '2. Cobrar al repartidor',
+    emoji: '💳',
+  },
+  {
+    key: 'ready' as const,
+    title: '3. Marcar listo',
+    emoji: '👨‍🍳',
+  },
+  {
+    key: 'deliver' as const,
+    title: '4. Entregado',
+    emoji: '✅',
+  },
 ];
 
 export default function DeliveryPage() {
   const router = useRouter();
-  const { live, newOrderCount, resetNewOrderCount } = useEntrantesAlerts();
+  const { live, newOrderCount, deliveryNewCount, resetNewOrderCount } =
+    useEntrantesAlerts();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -63,10 +81,10 @@ export default function DeliveryPage() {
   }, [load, resetNewOrderCount]);
 
   useEffect(() => {
-    if (newOrderCount > 0) {
+    if (newOrderCount > 0 || deliveryNewCount > 0) {
       load(true);
     }
-  }, [newOrderCount, load]);
+  }, [newOrderCount, deliveryNewCount, load]);
 
   useEffect(() => {
     const refreshOnReturn = () => {
@@ -92,10 +110,11 @@ export default function DeliveryPage() {
           order.orderNumber,
           restaurantName,
         );
+        await copyDeliveryWhatsAppMessage(order);
       } else if (action === 'charge') {
         router.push(`/cobro/${order.id}?from=delivery`);
         return;
-      } else if (action === 'dispatch') {
+      } else if (action === 'ready') {
         await updateOrderStatus(order.id, 'LISTO');
         notifyCustomerByWhatsApp(
           'ON_THE_WAY',
@@ -122,7 +141,7 @@ export default function DeliveryPage() {
     <div>
       <PageHeader
         title="Delivery"
-        description="Control de pedidos a domicilio — un paso a la vez"
+        description="Menú app → Speed → cobro → listo → entrega"
         action={
           <Button variant="secondary" onClick={() => load()}>
             Actualizar
@@ -152,12 +171,12 @@ export default function DeliveryPage() {
 
       <Card
         padding="sm"
-        className="mb-4 bg-indigo-50/80 border-indigo-200/60 text-sm text-foreground"
+        className="mb-4 bg-indigo-50/80 border-indigo-200/60 text-sm text-foreground leading-relaxed"
       >
-        Sigue los pasos en orden:{' '}
-        <strong>Confirmar → Cobrar → En camino → Entregado</strong>. Cada pedido
-        tiene un solo botón principal. Los recojos del menú público están en{' '}
-        <strong>Recojo</strong>.
+        <strong>Flujo real:</strong> confirmás y pedís Speed al mismo tiempo →
+        cuando llega el repartidor <strong>cobrás</strong> (aunque cocina siga)
+        → cuando la comida está lista <strong>marcás listo</strong> y avisás
+        al cliente → al entregar, <strong>cerrás</strong> el pedido.
       </Card>
 
       {error && (
