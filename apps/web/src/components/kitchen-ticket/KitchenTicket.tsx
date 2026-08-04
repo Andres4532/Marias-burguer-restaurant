@@ -1,6 +1,7 @@
 import type { Order } from '@/types/orders';
 import { formatOrderNumber, formatTime } from '@/lib/orders';
-import { ORDER_TYPE_LABELS } from '@/types/orders';
+import { formatPrice } from '@/lib/catalog';
+import { ORDER_TYPE_LABELS, PAYMENT_METHOD_LABELS } from '@/types/orders';
 import { getGoogleMapsUrl, hasDeliveryCoordinates } from '@/lib/maps';
 
 interface KitchenTicketProps {
@@ -25,9 +26,8 @@ export function KitchenTicket({ order }: KitchenTicketProps) {
       <div className="ticket-header">
         <h1 className="ticket-title">COCINA</h1>
         <p className="ticket-order">{formatOrderNumber(order.orderNumber)}</p>
-        <p className="ticket-meta">
-          {formatTime(order.createdAt)} · {destination}
-        </p>
+        <p className="ticket-time">{formatTime(order.createdAt)}</p>
+        <p className="ticket-destination">{destination}</p>
         <p className="ticket-type">{typeLabel.toUpperCase()}</p>
       </div>
 
@@ -36,8 +36,8 @@ export function KitchenTicket({ order }: KitchenTicketProps) {
           <hr className="ticket-divider" />
           <div className="ticket-delivery">
             <p className="ticket-delivery-title">MESA</p>
-            <p className="ticket-delivery-line">
-              <strong>Nombre:</strong> {mesaName}
+            <p className="ticket-delivery-line ticket-name-line">
+              <span className="ticket-label">Nombre:</span> {mesaName}
             </p>
           </div>
         </>
@@ -48,8 +48,8 @@ export function KitchenTicket({ order }: KitchenTicketProps) {
           <hr className="ticket-divider" />
           <div className="ticket-delivery">
             <p className="ticket-delivery-title">PARA RECOJO</p>
-            <p className="ticket-delivery-line">
-              <strong>Nombre:</strong> {pickupName}
+            <p className="ticket-delivery-line ticket-name-line">
+              <span className="ticket-label">Nombre:</span> {pickupName}
             </p>
           </div>
         </>
@@ -61,23 +61,23 @@ export function KitchenTicket({ order }: KitchenTicketProps) {
           <div className="ticket-delivery">
             <p className="ticket-delivery-title">DATOS DE ENTREGA</p>
             {order.customerName && (
-              <p className="ticket-delivery-line">
-                <strong>Cliente:</strong> {order.customerName}
+              <p className="ticket-delivery-line ticket-name-line">
+                <span className="ticket-label">Cliente:</span> {order.customerName}
               </p>
             )}
             {order.customerPhone && (
               <p className="ticket-delivery-line">
-                <strong>Tel:</strong> {order.customerPhone}
+                <span className="ticket-label">Tel:</span> {order.customerPhone}
               </p>
             )}
             {order.deliveryAddress && (
               <p className="ticket-delivery-line">
-                <strong>Dir:</strong> {order.deliveryAddress}
+                <span className="ticket-label">Dir:</span> {order.deliveryAddress}
               </p>
             )}
             {order.deliveryReference && (
               <p className="ticket-delivery-line">
-                <strong>Ref:</strong> {order.deliveryReference}
+                <span className="ticket-label">Ref:</span> {order.deliveryReference}
               </p>
             )}
             {hasDeliveryCoordinates(
@@ -85,7 +85,7 @@ export function KitchenTicket({ order }: KitchenTicketProps) {
               order.deliveryLongitude,
             ) && (
               <p className="ticket-delivery-line">
-                <strong>Maps:</strong>{' '}
+                <span className="ticket-label">Maps:</span>{' '}
                 {getGoogleMapsUrl(
                   order.deliveryLatitude!,
                   order.deliveryLongitude!,
@@ -102,7 +102,7 @@ export function KitchenTicket({ order }: KitchenTicketProps) {
         {order.items.map((item) => (
           <div key={item.id} className="ticket-item">
             <p className="ticket-item-name">
-              <strong>{item.quantity}×</strong> {item.productName}
+              <span className="ticket-qty">{item.quantity}×</span> {item.productName}
             </p>
             {item.extras.length > 0 && (
               <ul className="ticket-extras">
@@ -122,9 +122,19 @@ export function KitchenTicket({ order }: KitchenTicketProps) {
         <>
           <hr className="ticket-divider" />
           <p className="ticket-order-note">
-            <strong>Nota pedido:</strong> {order.notes}
+            <span className="ticket-label">Nota pedido:</span> {order.notes}
           </p>
         </>
+      )}
+
+      <hr className="ticket-divider" />
+
+      <p className="ticket-total">TOTAL: {formatPrice(order.total)}</p>
+      {order.payment && (
+        <p className="ticket-total-paid">
+          COBRADO · {PAYMENT_METHOD_LABELS[order.payment.method]} ·{' '}
+          {formatPrice(order.payment.amount)}
+        </p>
       )}
 
       <hr className="ticket-divider" />

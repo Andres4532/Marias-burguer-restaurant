@@ -37,28 +37,98 @@ body {
 .kitchen-ticket {
   width: 80mm;
   font-family: 'Courier New', Courier, monospace;
-  font-size: 12px;
+  font-size: 13px;
+  font-weight: 800;
   color: #000;
   background: #fff;
   padding: 8px;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
 }
 
 .ticket-header { text-align: center; margin-bottom: 8px; }
-.ticket-title { font-size: 18px; font-weight: bold; margin: 0; }
-.ticket-order { font-size: 22px; font-weight: bold; margin: 4px 0; }
-.ticket-meta { font-size: 11px; margin: 2px 0; }
-.ticket-type { font-size: 13px; font-weight: bold; margin: 4px 0; }
-.ticket-divider { border: none; border-top: 1px dashed #000; margin: 8px 0; }
+.ticket-title { font-size: 20px; font-weight: 900; margin: 0; letter-spacing: 0.05em; }
+.ticket-order { font-size: 24px; font-weight: 900; margin: 4px 0; }
+.ticket-time {
+  font-size: 15px;
+  font-weight: 900;
+  margin: 4px 0 2px;
+  letter-spacing: 0.03em;
+}
+.ticket-destination {
+  font-size: 15px;
+  font-weight: 900;
+  margin: 2px 0;
+  text-transform: uppercase;
+}
+.ticket-type { font-size: 14px; font-weight: 900; margin: 4px 0; letter-spacing: 0.04em; }
+.ticket-divider { border: none; border-top: 2px dashed #000; margin: 8px 0; }
 .ticket-item { margin-bottom: 10px; }
-.ticket-item-name { font-size: 14px; font-weight: bold; margin: 0; }
-.ticket-extras { margin: 2px 0 0 16px; padding: 0; font-size: 11px; }
-.ticket-extras li { list-style: none; }
-.ticket-note { font-size: 11px; font-style: italic; margin: 2px 0 0 0; }
-.ticket-order-note { font-size: 12px; margin: 0; }
-.ticket-delivery { font-size: 11px; }
-.ticket-delivery-title { font-weight: bold; margin: 0 0 4px 0; text-align: center; }
-.ticket-delivery-line { margin: 2px 0; word-break: break-word; }
-.ticket-footer { text-align: center; font-size: 11px; margin: 0; }
+.ticket-item-name {
+  font-size: 16px;
+  font-weight: 900;
+  margin: 0;
+  line-height: 1.35;
+}
+.ticket-qty { font-weight: 900; }
+.ticket-extras {
+  margin: 3px 0 0 12px;
+  padding: 0;
+  font-size: 13px;
+  font-weight: 800;
+}
+.ticket-extras li { list-style: none; line-height: 1.35; }
+.ticket-note {
+  font-size: 13px;
+  font-weight: 800;
+  font-style: normal;
+  margin: 3px 0 0 0;
+}
+.ticket-order-note {
+  font-size: 13px;
+  font-weight: 800;
+  margin: 0;
+  line-height: 1.35;
+}
+.ticket-delivery { font-size: 13px; font-weight: 800; }
+.ticket-delivery-title {
+  font-weight: 900;
+  font-size: 14px;
+  margin: 0 0 6px 0;
+  text-align: center;
+  letter-spacing: 0.04em;
+}
+.ticket-delivery-line {
+  margin: 3px 0;
+  word-break: break-word;
+  font-weight: 800;
+  font-size: 13px;
+  line-height: 1.35;
+}
+.ticket-name-line {
+  font-size: 16px;
+  font-weight: 900;
+}
+.ticket-label { font-weight: 900; }
+.ticket-total {
+  text-align: center;
+  font-size: 20px;
+  font-weight: 900;
+  margin: 6px 0;
+  letter-spacing: 0.02em;
+}
+.ticket-total-paid {
+  text-align: center;
+  font-size: 14px;
+  font-weight: 900;
+  margin: 0 0 4px;
+}
+.ticket-footer {
+  text-align: center;
+  font-size: 12px;
+  font-weight: 800;
+  margin: 0;
+}
 
 @media print {
   body * {
