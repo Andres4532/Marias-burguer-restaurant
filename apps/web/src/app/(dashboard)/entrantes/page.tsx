@@ -172,17 +172,16 @@ export default function EntrantesPage() {
                     · {order.items.length} producto(s)
                   </p>
                 </div>
-                  <div className="flex sm:flex-col items-stretch sm:items-end justify-between sm:justify-center gap-2 shrink-0">
+                <div className="flex flex-col items-stretch sm:items-end gap-3 shrink-0">
                   <p className="text-xl font-extrabold text-foreground sm:text-right">
                     {formatPrice(order.total)}
                   </p>
-                  <div className="flex flex-col items-stretch gap-2">
+                  <div className="flex flex-row flex-wrap items-center justify-end gap-2">
                     {order.type === 'DELIVERY' && (
                       <DeliveryHandoffButtons order={order} layout="row" />
                     )}
                     <Button
                       size="md"
-                      className="w-full sm:w-auto"
                       disabled={confirmingId === order.id}
                       onClick={() => void handleConfirm(order)}
                     >
@@ -190,15 +189,13 @@ export default function EntrantesPage() {
                         ? 'Confirmando…'
                         : 'Confirmar → cocina'}
                     </Button>
-                    <Link href={`/pedidos/${order.id}`}>
-                      <Button variant="secondary" size="md" className="w-full sm:w-auto">
+                    <Link href={`/pedidos/${order.id}`} className="inline-flex">
+                      <Button variant="secondary" size="md">
                         Ver detalle
                       </Button>
                     </Link>
-                    <Link href={`/cobro/${order.id}`}>
-                      <Button size="md" className="w-full sm:w-auto">
-                        Cobrar →
-                      </Button>
+                    <Link href={`/cobro/${order.id}`} className="inline-flex">
+                      <Button size="md">Cobrar →</Button>
                     </Link>
                   </div>
                 </div>
