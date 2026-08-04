@@ -190,6 +190,7 @@ export default function CobroPage() {
   if (!order) return null;
 
   const summary = getOrderSummary(order);
+  const needsKitchenConfirm = order.status === 'PENDIENTE_CONFIRMACION';
 
   const billingBlock = order.payment?.billingNit ? (
     <div className="rounded-xl border border-border bg-background p-3 text-sm">
@@ -343,6 +344,21 @@ export default function CobroPage() {
                 >
                   Ver detalle del pedido
                 </Button>
+              </div>
+            ) : needsKitchenConfirm ? (
+              <div className="space-y-4 py-6 text-center">
+                <p className="font-extrabold text-foreground text-lg">
+                  Confirma cocina primero
+                </p>
+                <p className="text-sm text-text-secondary">
+                  Este pedido del menú público aún no fue enviado a cocina. Confírmalo
+                  en Entrantes y luego podrás cobrar.
+                </p>
+                <Link href="/entrantes" className="inline-flex">
+                  <Button variant="success" size="lg">
+                    Ir a Entrantes
+                  </Button>
+                </Link>
               </div>
             ) : (
               <div className="space-y-5">

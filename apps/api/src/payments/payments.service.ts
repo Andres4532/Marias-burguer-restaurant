@@ -45,9 +45,14 @@ export class PaymentsService {
       throw new BadRequestException('Este pedido ya fue cobrado');
     }
 
+    if (order.status === OrderStatus.PENDIENTE_CONFIRMACION) {
+      throw new BadRequestException(
+        'Confirma el pedido para cocina antes de cobrar',
+      );
+    }
+
     const payableStatuses: OrderStatus[] = [
       OrderStatus.PENDIENTE,
-      OrderStatus.PENDIENTE_CONFIRMACION,
       OrderStatus.EN_COCINA,
       OrderStatus.LISTO,
     ];

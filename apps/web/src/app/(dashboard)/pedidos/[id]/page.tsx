@@ -25,6 +25,7 @@ import {
   getOrderSummary,
   canEditOrder,
   canCancelOrder,
+  canChargeOrder,
   type Order,
   type OrderStatus,
 } from '@/types/orders';
@@ -275,16 +276,18 @@ export default function PedidoDetallePage() {
                   <DeliveryHandoffButtons order={order} />
                 )}
 
-              {(order.status === 'PENDIENTE' ||
-                order.status === 'PENDIENTE_CONFIRMACION' ||
-                order.status === 'EN_COCINA' ||
-                order.status === 'LISTO') &&
-                !isPaid && (
+              {canChargeOrder(order) && (
                 <Link href={`/cobro/${id}`} className="block w-full">
                   <Button className="w-full" size="lg">
                     Cobrar pedido
                   </Button>
                 </Link>
+              )}
+
+              {!isPaid && order.status === 'PENDIENTE_CONFIRMACION' && (
+                <p className="text-xs text-text-secondary">
+                  Confirma el pedido en Entrantes antes de cobrar.
+                </p>
               )}
 
               {isPaid && order.status !== 'CANCELADO' && order.status !== 'ENTREGADO' && (

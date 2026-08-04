@@ -15,6 +15,7 @@ import {
   PAYMENT_METHOD_LABELS,
   getOrderSummary,
   canEditOrder,
+  canChargeOrder,
   type Order,
   type OrderStatus,
   type OrderType,
@@ -134,12 +135,7 @@ export default function PedidosPage() {
         ) : (
           <div className="divide-y divide-border">
             {orders.map((order) => {
-              const canCharge =
-                (order.status === 'PENDIENTE' ||
-                  order.status === 'PENDIENTE_CONFIRMACION' ||
-                  order.status === 'EN_COCINA' ||
-                  order.status === 'LISTO') &&
-                !order.payment;
+              const canCharge = canChargeOrder(order);
 
               return (
                 <div

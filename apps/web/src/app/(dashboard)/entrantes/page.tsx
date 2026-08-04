@@ -17,6 +17,7 @@ import {
 import {
   ORDER_TYPE_LABELS,
   getOrderSummary,
+  canChargeOrder,
   type Order,
 } from '@/types/orders';
 
@@ -138,7 +139,10 @@ export default function EntrantesPage() {
           </div>
         ) : (
           <div className="divide-y divide-border">
-            {orders.map((order) => (
+            {orders.map((order) => {
+              const canCharge = canChargeOrder(order);
+
+              return (
               <div
                 key={order.id}
                 className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 sm:p-5 hover:bg-primary/[0.02] transition"
@@ -181,6 +185,7 @@ export default function EntrantesPage() {
                       <DeliveryHandoffButtons order={order} layout="row" />
                     )}
                     <Button
+                      variant="success"
                       size="md"
                       disabled={confirmingId === order.id}
                       onClick={() => void handleConfirm(order)}
@@ -194,13 +199,24 @@ export default function EntrantesPage() {
                         Ver detalle
                       </Button>
                     </Link>
-                    <Link href={`/cobro/${order.id}`} className="inline-flex">
-                      <Button size="md">Cobrar →</Button>
-                    </Link>
+                    {canCharge ? (
+                      <Link href={`/cobro/${order.id}`} className="inline-flex">
+                        <Button size="md">Cobrar →</Button>
+                      </Link>
+                    ) : (
+                      <Button
+                        size="md"
+                        disabled
+                        title="Confirma el pedido para cocina primero"
+                      >
+                        Cobrar →
+                      </Button>
+                    )}
                   </div>
                 </div>
               </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </Card>

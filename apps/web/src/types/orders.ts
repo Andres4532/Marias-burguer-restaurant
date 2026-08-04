@@ -158,6 +158,12 @@ export function canEditOrder(order: Order): boolean {
   );
 }
 
+export function canChargeOrder(order: Order): boolean {
+  if (order.payment) return false;
+  if (order.status === 'PENDIENTE_CONFIRMACION') return false;
+  return ['PENDIENTE', 'EN_COCINA', 'LISTO'].includes(order.status);
+}
+
 export function canCancelOrder(order: Order, isJefa: boolean): boolean {
   if (order.status === 'CANCELADO' || order.status === 'ENTREGADO') {
     return false;
