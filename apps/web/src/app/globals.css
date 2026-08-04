@@ -33,7 +33,7 @@ body {
   left: -9999px;
   top: 0;
   width: 72mm;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .kitchen-ticket-print-set {
@@ -74,7 +74,7 @@ body {
   background: #fff !important;
   padding: 2mm 1mm;
   line-height: 1.4;
-  overflow: hidden;
+  overflow: visible;
   -webkit-print-color-adjust: exact;
   print-color-adjust: exact;
 }
@@ -254,14 +254,12 @@ body {
   }
 
   .kitchen-ticket-copy {
-    page-break-after: avoid !important;
-    page-break-inside: avoid !important;
-    break-after: avoid !important;
-    break-inside: avoid !important;
+    page-break-inside: auto !important;
+    break-inside: auto !important;
   }
 
   @page {
-    size: 80mm auto;
+    size: 80mm 5000mm;
     margin: 2mm;
   }
 }
