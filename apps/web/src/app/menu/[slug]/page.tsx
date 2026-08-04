@@ -21,6 +21,7 @@ import { isDeliveryLocationComplete } from '@/lib/maps';
 import { ProductImage } from '@/components/ui/ProductImage';
 import { RestaurantLogo } from '@/components/layout/RestaurantLogo';
 import { formatPrice } from '@/lib/catalog';
+import { ProductPrice } from '@/components/catalog/ProductPrice';
 import {
   canAddOneToCart,
   isOutOfStock,
@@ -350,9 +351,15 @@ export default function PublicMenuPage() {
                           {product.description}
                         </p>
                       )}
-                      <p className="mt-auto pt-2 text-primary font-extrabold">
-                        {formatPrice(product.price)}
-                      </p>
+                      <div className="mt-auto pt-2">
+                        <ProductPrice
+                          price={product.price}
+                          effectivePrice={product.effectivePrice}
+                          hasPromotion={product.hasPromotion}
+                          promoLabel={product.promoLabel}
+                          showBadge
+                        />
+                      </div>
                       {out && (
                         <p className="text-[10px] font-bold text-red-400 mt-2">
                           Agotado

@@ -34,8 +34,17 @@ import {
   getErrorMessage,
 } from '@/lib/catalog';
 import { uploadProductImage } from '@/lib/uploads';
-import type { Product, Category } from '@/types/catalog';
+import type { Product, Category, ProductPromoType } from '@/types/catalog';
+import { ProductPrice } from '@/components/catalog/ProductPrice';
 import { getSortOrderForEnd } from '@/lib/sort-order';
+
+function toDatetimeLocal(value: string | null | undefined): string {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  const pad = (part: number) => String(part).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
 
 export default function ProductosPage() {
   const { loading, isJefa } = useRequireJefa();
@@ -59,6 +68,11 @@ export default function ProductosPage() {
   const [isActive, setIsActive] = useState(true);
   const [trackStock, setTrackStock] = useState(false);
   const [stockQuantity, setStockQuantity] = useState('0');
+  const [promoEnabled, setPromoEnabled] = useState(false);
+  const [promoType, setPromoType] = useState<ProductPromoType>('PERCENT');
+  const [promoValue, setPromoValue] = useState('');
+  const [promoStartsAt, setPromoStartsAt] = useState('');
+  const [promoEndsAt, setPromoEndsAt] = useState('');
 
   const load = useCallback(async () => {
     setLoadingData(true);
@@ -91,6 +105,11 @@ export default function ProductosPage() {
     setIsActive(true);
     setTrackStock(false);
     setStockQuantity('0');
+    setPromoEnabled(false);
+    setPromoType('PERCENT');
+    setPromoValue('');
+    setPromoStartsAt('');
+    setPromoEndsAt('');
     setError('');
     setModalOpen(true);
   };
@@ -105,6 +124,11 @@ export default function ProductosPage() {
     setIsActive(item.isActive);
     setTrackStock(item.trackStock);
     setStockQuantity(String(item.stockQuantity));
+    setPromoEnabled(item.promoType !== 'NONE');
+    setPromoType(item.promoType === 'FIXED_PRICE' ? 'FIXED_PRICE' : 'PERCENT');
+    setPromoValue(item.promoValue != null ? String(item.promoValue) : '');
+    setPromoStartsAt(toDatetimeLocal(item.promoStartsAt));
+    setPromoEndsAt(toDatetimeLocal(item.promoEndsAt));
     setError('');
     setModalOpen(true);
   };
@@ -142,6 +166,24 @@ export default function ProductosPage() {
         isActive,
         trackStock,
         stockQuantity: trackStock ? parseInt(stockQuantity, 10) || 0 : 0,
+        promoType: promoEnabled ? promoType : ('NONE' as ProductPromoType),
+        promoValue:
+          promoEnabled && promoValue.trim()
+            ? parseFloat(promoValue)
+            : undefined,
+        ...(promoEnabled
+          ? {
+              promoStartsAt: promoStartsAt
+                ? new Date(promoStartsAt).toISOString()
+                : null,
+              promoEndsAt: promoEndsAt
+                ? new Date(promoEndsAt).toISOString()
+                : null,
+            }
+          : {
+              promoStartsAt: null,
+              promoEndsAt: null,
+            }),
       };
       if (editing) {
         await updateProduct(editing.id, data);
@@ -239,9 +281,13 @@ export default function ProductosPage() {
                   </span>
                 </CrudTd>
                 <CrudTd>
-                  <span className="font-bold text-primary">
-                    {formatPrice(item.price)}
-                  </span>
+                  <ProductPrice
+                    price={item.price}
+                    effectivePrice={item.effectivePrice}
+                    hasPromotion={item.hasPromotion}
+                    promoLabel={item.promoLabel}
+                    showBadge
+                  />
                 </CrudTd>
                 <CrudTd>
                   <Badge active={item.isActive} />
@@ -345,6 +391,65 @@ export default function ProductosPage() {
               />
             </div>
           )}
+
+          <div className="space-y-3 rounded-xl border border-border bg-background/50 px-4 py-3">
+            <ActiveCheckbox
+              checked={promoEnabled}
+              onChange={setPromoEnabled}
+              label="Promoción o descuento"
+            />
+
+            {promoEnabled && (
+              <div className="space-y-3 pt-1">
+                <Select
+                  label="Tipo"
+                  value={promoType}
+                  onChange={(e) =>
+                    setPromoType(e.target.value as ProductPromoType)
+                  }
+                >
+                  <option value="PERCENT">Descuento en %</option>
+                  <option value="FIXED_PRICE">Precio promocional fijo</option>
+                </Select>
+
+                <Input
+                  label={
+                    promoType === 'PERCENT'
+                      ? 'Descuento (%)'
+                      : 'Precio promocional (Bs.)'
+                  }
+                  type="number"
+                  min={promoType === 'PERCENT' ? 1 : 0}
+                  max={promoType === 'PERCENT' ? 100 : undefined}
+                  step={promoType === 'PERCENT' ? 1 : 0.5}
+                  value={promoValue}
+                  onChange={(e) => setPromoValue(e.target.value)}
+                  required
+                />
+
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                  <Input
+                    label="Inicio (opcional)"
+                    type="datetime-local"
+                    value={promoStartsAt}
+                    onChange={(e) => setPromoStartsAt(e.target.value)}
+                  />
+                  <Input
+                    label="Fin (opcional)"
+                    type="datetime-local"
+                    value={promoEndsAt}
+                    onChange={(e) => setPromoEndsAt(e.target.value)}
+                  />
+                </div>
+
+                <p className="text-xs text-text-secondary leading-relaxed">
+                  El descuento aplica al precio base del producto. Los extras se
+                  cobran al precio normal.
+                </p>
+              </div>
+            )}
+          </div>
+
           {error && <FormError message={error} />}
           <FormActions
             saving={saving}

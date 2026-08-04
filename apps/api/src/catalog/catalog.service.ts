@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { toNumber } from '../common/utils/decimal.util';
+import { mapProductPromoFields } from '../common/utils/product-pricing.util';
 
 export type CatalogResponse = {
   categories: Array<{
@@ -12,6 +12,9 @@ export type CatalogResponse = {
       name: string;
       description: string | null;
       price: number;
+      effectivePrice: number;
+      hasPromotion: boolean;
+      promoLabel: string | null;
       imageUrl: string | null;
       sortOrder: number;
       trackStock: boolean;
@@ -41,16 +44,22 @@ export class CatalogService {
         id: category.id,
         name: category.name,
         sortOrder: category.sortOrder,
-        products: category.products.map((product) => ({
-          id: product.id,
-          name: product.name,
-          description: product.description,
-          price: toNumber(product.price),
-          imageUrl: product.imageUrl,
-          sortOrder: product.sortOrder,
-          trackStock: product.trackStock,
-          stockQuantity: product.stockQuantity,
-        })),
+        products: category.products.map((product) => {
+          const promo = mapProductPromoFields(product);
+          return {
+            id: product.id,
+            name: product.name,
+            description: product.description,
+            price: promo.price,
+            effectivePrice: promo.effectivePrice,
+            hasPromotion: promo.hasPromotion,
+            promoLabel: promo.promoLabel,
+            imageUrl: product.imageUrl,
+            sortOrder: product.sortOrder,
+            trackStock: product.trackStock,
+            stockQuantity: product.stockQuantity,
+          };
+        }),
       })),
     };
   }

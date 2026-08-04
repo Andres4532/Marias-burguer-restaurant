@@ -44,6 +44,12 @@ enum PaymentStatus {
   REEMBOLSADO
 }
 
+enum ProductPromoType {
+  NONE
+  PERCENT
+  FIXED_PRICE
+}
+
 model User {
   id           String   @id @default(cuid())
   email        String   @unique
@@ -82,6 +88,10 @@ model Product {
   sortOrder   Int       @default(0)
   trackStock  Boolean   @default(false)
   stockQuantity Int     @default(0)
+  promoType     ProductPromoType @default(NONE)
+  promoValue    Decimal?  @db.Decimal(10, 2)
+  promoStartsAt DateTime?
+  promoEndsAt   DateTime?
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 

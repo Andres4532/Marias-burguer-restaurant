@@ -9,7 +9,10 @@ import {
   IsUrl,
   MaxLength,
   ValidateIf,
+  IsEnum,
+  IsDateString,
 } from 'class-validator';
+import { ProductPromoType } from '@prisma/client';
 import { HTTP_URL_VALIDATION_OPTIONS } from '../../common/validation/url-options';
 
 export class UpdateProductDto {
@@ -58,4 +61,23 @@ export class UpdateProductDto {
   @IsArray()
   @IsString({ each: true })
   extraIds?: string[];
+
+  @IsOptional()
+  @IsEnum(ProductPromoType)
+  promoType?: ProductPromoType;
+
+  @IsOptional()
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0)
+  promoValue?: number;
+
+  @IsOptional()
+  @ValidateIf((_, value) => value != null && value !== '')
+  @IsDateString()
+  promoStartsAt?: string | null;
+
+  @IsOptional()
+  @ValidateIf((_, value) => value != null && value !== '')
+  @IsDateString()
+  promoEndsAt?: string | null;
 }

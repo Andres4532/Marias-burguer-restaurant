@@ -18,6 +18,7 @@ import { CreateOrderDto } from './dto/create-order.dto';
 import { CreatePublicOrderDto } from './dto/create-public-order.dto';
 import { UpdateMesaOrderDto } from './dto/update-mesa-order.dto';
 import { toNumber } from '../common/utils/decimal.util';
+import { getProductPromoPricing } from '../common/utils/product-pricing.util';
 import { TimezoneService } from '../common/timezone/timezone.service';
 import { EventsService } from '../events/events.service';
 import type { JwtPayloadUser } from '../common/decorators/current-user.decorator';
@@ -463,7 +464,8 @@ export class OrdersService {
       });
 
       const extrasTotal = selectedExtras.reduce((sum, e) => sum + e.price, 0);
-      const unitPrice = toNumber(product.price) + extrasTotal;
+      const { effectivePrice } = getProductPromoPricing(product);
+      const unitPrice = effectivePrice + extrasTotal;
       const lineTotal = unitPrice * item.quantity;
       subtotal += lineTotal;
 

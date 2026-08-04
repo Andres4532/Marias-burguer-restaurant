@@ -11,7 +11,8 @@ import { DeliveryFormFields } from '@/components/orders/DeliveryFormFields';
 import { isDeliveryLocationComplete } from '@/lib/maps';
 import { ProductImage } from '@/components/ui/ProductImage';
 import { useCart } from '@/hooks/useCart';
-import { getCatalog, formatPrice, getErrorMessage } from '@/lib/catalog';
+import { getCatalog, getErrorMessage } from '@/lib/catalog';
+import { ProductPrice } from '@/components/catalog/ProductPrice';
 import { createOrder } from '@/lib/orders';
 import {
   canAddOneToCart,
@@ -282,9 +283,13 @@ export default function PosPage() {
                         </p>
                       )}
                       <div className="mt-auto flex items-center justify-between gap-2 flex-wrap pt-3">
-                        <span className="text-primary font-extrabold text-sm">
-                          {formatPrice(product.price)}
-                        </span>
+                        <ProductPrice
+                          price={product.price}
+                          effectivePrice={product.effectivePrice}
+                          hasPromotion={product.hasPromotion}
+                          promoLabel={product.promoLabel}
+                          showBadge
+                        />
                         {out ? (
                           <span className="text-[10px] font-bold text-red-300 bg-red-950/50 px-2 py-1 rounded-full">
                             Agotado

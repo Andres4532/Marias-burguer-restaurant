@@ -4,10 +4,12 @@ import {
   ConflictException,
   BadRequestException,
 } from '@nestjs/common';
+import { ProductPromoType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { toNumber } from '../common/utils/decimal.util';
+import { mapProductPromoFields } from '../common/utils/product-pricing.util';
 
 @Injectable()
 export class ProductsService {
@@ -24,6 +26,10 @@ export class ProductsService {
     sortOrder: number;
     trackStock: boolean;
     stockQuantity: number;
+    promoType: ProductPromoType;
+    promoValue: { toString(): string } | null;
+    promoStartsAt: Date | null;
+    promoEndsAt: Date | null;
     createdAt: Date;
     updatedAt: Date;
     category?: { id: string; name: string };
@@ -36,13 +42,22 @@ export class ProductsService {
       };
     }>;
   }) {
+    const promo = mapProductPromoFields(product);
+
     return {
       id: product.id,
       categoryId: product.categoryId,
       categoryName: product.category?.name,
       name: product.name,
       description: product.description,
-      price: toNumber(product.price),
+      price: promo.price,
+      effectivePrice: promo.effectivePrice,
+      hasPromotion: promo.hasPromotion,
+      promoType: promo.promoType,
+      promoValue: promo.promoValue,
+      promoStartsAt: promo.promoStartsAt,
+      promoEndsAt: promo.promoEndsAt,
+      promoLabel: promo.promoLabel,
       imageUrl: product.imageUrl,
       isActive: product.isActive,
       sortOrder: product.sortOrder,
@@ -56,6 +71,76 @@ export class ProductsService {
       })),
       createdAt: product.createdAt,
       updatedAt: product.updatedAt,
+    };
+  }
+
+  private validatePromo(
+    price: number,
+    promoType?: ProductPromoType,
+    promoValue?: number,
+    promoStartsAt?: string | null,
+    promoEndsAt?: string | null,
+  ) {
+    const type = promoType ?? ProductPromoType.NONE;
+
+    if (type === ProductPromoType.NONE) {
+      return {
+        promoType: ProductPromoType.NONE,
+        promoValue: null,
+        promoStartsAt: null,
+        promoEndsAt: null,
+      };
+    }
+
+    if (promoValue == null) {
+      throw new BadRequestException(
+        'Debes indicar el valor de la promoción',
+      );
+    }
+
+    if (type === ProductPromoType.PERCENT) {
+      if (promoValue <= 0 || promoValue > 100) {
+        throw new BadRequestException(
+          'El descuento debe estar entre 1 y 100%',
+        );
+      }
+    }
+
+    if (type === ProductPromoType.FIXED_PRICE) {
+      if (promoValue < 0) {
+        throw new BadRequestException('El precio promocional no puede ser negativo');
+      }
+      if (promoValue >= price) {
+        throw new BadRequestException(
+          'El precio promocional debe ser menor al precio normal',
+        );
+      }
+    }
+
+    const startsAt =
+      promoStartsAt === undefined
+        ? null
+        : promoStartsAt
+          ? new Date(promoStartsAt)
+          : null;
+    const endsAt =
+      promoEndsAt === undefined
+        ? null
+        : promoEndsAt
+          ? new Date(promoEndsAt)
+          : null;
+
+    if (startsAt && endsAt && startsAt > endsAt) {
+      throw new BadRequestException(
+        'La fecha de inicio debe ser anterior a la de fin',
+      );
+    }
+
+    return {
+      promoType: type,
+      promoValue,
+      promoStartsAt: startsAt,
+      promoEndsAt: endsAt,
     };
   }
 
@@ -147,6 +232,14 @@ export class ProductsService {
     const extraIds = dto.extraIds ?? [];
     await this.validateExtras(extraIds);
 
+    const promo = this.validatePromo(
+      dto.price,
+      dto.promoType,
+      dto.promoValue,
+      dto.promoStartsAt,
+      dto.promoEndsAt,
+    );
+
     const product = await this.prisma.product.create({
       data: {
         categoryId: dto.categoryId,
@@ -158,6 +251,10 @@ export class ProductsService {
         isActive: dto.isActive ?? true,
         trackStock: dto.trackStock ?? false,
         stockQuantity: dto.trackStock ? (dto.stockQuantity ?? 0) : 0,
+        promoType: promo.promoType,
+        promoValue: promo.promoValue,
+        promoStartsAt: promo.promoStartsAt,
+        promoEndsAt: promo.promoEndsAt,
         extras: extraIds.length
           ? {
               create: extraIds.map((extraId) => ({ extraId })),
@@ -170,7 +267,7 @@ export class ProductsService {
   }
 
   async update(id: string, dto: UpdateProductDto) {
-    await this.findOne(id);
+    const current = await this.findOne(id);
 
     if (dto.categoryId) {
       await this.validateCategory(dto.categoryId);
@@ -197,11 +294,46 @@ export class ProductsService {
       }
     }
 
-    const { extraIds, ...rest } = dto;
+    const { extraIds, promoType, promoValue, promoStartsAt, promoEndsAt, ...rest } =
+      dto;
+
+    const nextPrice = dto.price ?? current.price;
+    const resolvedPromoType =
+      promoType !== undefined ? promoType : current.promoType;
+    const resolvedPromoValue =
+      promoValue !== undefined
+        ? promoValue
+        : resolvedPromoType === ProductPromoType.NONE
+          ? undefined
+          : (current.promoValue ?? undefined);
+    const resolvedStartsAt =
+      promoStartsAt !== undefined
+        ? promoStartsAt
+        : current.promoStartsAt
+          ? current.promoStartsAt.toISOString()
+          : null;
+    const resolvedEndsAt =
+      promoEndsAt !== undefined
+        ? promoEndsAt
+        : current.promoEndsAt
+          ? current.promoEndsAt.toISOString()
+          : null;
+
+    const promo = this.validatePromo(
+      nextPrice,
+      resolvedPromoType,
+      resolvedPromoValue,
+      resolvedStartsAt,
+      resolvedEndsAt,
+    );
+
     const productData = {
       ...rest,
-      imageUrl:
-        rest.imageUrl === '' ? null : rest.imageUrl,
+      imageUrl: rest.imageUrl === '' ? null : rest.imageUrl,
+      promoType: promo.promoType,
+      promoValue: promo.promoValue,
+      promoStartsAt: promo.promoStartsAt,
+      promoEndsAt: promo.promoEndsAt,
     };
 
     if (dto.trackStock === false) {

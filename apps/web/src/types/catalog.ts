@@ -1,3 +1,5 @@
+export type ProductPromoType = 'NONE' | 'PERCENT' | 'FIXED_PRICE';
+
 export interface Category {
   id: string;
   name: string;
@@ -15,6 +17,13 @@ export interface Product {
   name: string;
   description: string | null;
   price: number;
+  effectivePrice: number;
+  hasPromotion: boolean;
+  promoType: ProductPromoType;
+  promoValue: number | null;
+  promoStartsAt: string | null;
+  promoEndsAt: string | null;
+  promoLabel: string | null;
   imageUrl: string | null;
   isActive: boolean;
   sortOrder: number;
@@ -37,6 +46,9 @@ export interface CatalogCategory {
     name: string;
     description: string | null;
     price: number;
+    effectivePrice: number;
+    hasPromotion: boolean;
+    promoLabel: string | null;
     imageUrl: string | null;
     sortOrder: number;
     trackStock: boolean;
@@ -60,4 +72,8 @@ export interface CreateProductInput {
   isActive?: boolean;
   trackStock?: boolean;
   stockQuantity?: number;
+  promoType?: ProductPromoType;
+  promoValue?: number;
+  promoStartsAt?: string | null;
+  promoEndsAt?: string | null;
 }

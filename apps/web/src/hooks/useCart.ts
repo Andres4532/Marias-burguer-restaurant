@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
+import { getCartBasePrice } from '@/lib/product-pricing';
 import type { Order, OrderType } from '@/types/orders';
 
 export interface CartExtra {
@@ -42,7 +43,12 @@ export function useCart() {
 
   const addItem = useCallback(
     (
-      product: { id: string; name: string; price: number },
+      product: {
+        id: string;
+        name: string;
+        price: number;
+        effectivePrice?: number;
+      },
       extras: CartExtra[],
       notes?: string,
     ) => {
@@ -64,7 +70,7 @@ export function useCart() {
             key,
             productId: product.id,
             productName: product.name,
-            basePrice: product.price,
+            basePrice: getCartBasePrice(product),
             quantity: 1,
             extras,
             notes,
