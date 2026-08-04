@@ -9,7 +9,7 @@ import { Card } from '@/components/ui/Card';
 import { StatusBadge } from '@/components/orders/StatusBadge';
 import { DeliveryMapLinks } from '@/components/orders/DeliveryMapLinks';
 import { DeliveryHandoffButtons } from '@/components/orders/DeliveryHandoffButtons';
-import { KitchenTicket, printKitchenTicket } from '@/components/kitchen-ticket/KitchenTicket';
+import { KitchenTicketPrintSet, printKitchenTicket } from '@/components/kitchen-ticket/KitchenTicket';
 import { TicketPreviewModal } from '@/components/kitchen-ticket/TicketPreviewModal';
 import {
   getOrder,
@@ -358,7 +358,7 @@ export default function PedidoDetallePage() {
       </div>
 
       <div className="kitchen-ticket-print-area">
-        <KitchenTicket order={order} />
+        <KitchenTicketPrintSet order={order} />
       </div>
 
       <TicketPreviewModal

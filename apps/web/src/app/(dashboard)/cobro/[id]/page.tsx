@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Card';
 import { StatusBadge } from '@/components/orders/StatusBadge';
-import { KitchenTicket, printKitchenTicket } from '@/components/kitchen-ticket/KitchenTicket';
+import { KitchenTicketPrintSet, printKitchenTicket } from '@/components/kitchen-ticket/KitchenTicket';
 import { TicketPreviewModal } from '@/components/kitchen-ticket/TicketPreviewModal';
 import { getOrder, payOrder, formatOrderNumber } from '@/lib/orders';
 import { formatPrice, getErrorMessage } from '@/lib/catalog';
@@ -547,7 +547,7 @@ export default function CobroPage() {
       </div>
 
       <div className="kitchen-ticket-print-area">
-        <KitchenTicket order={order} />
+        <KitchenTicketPrintSet order={order} />
       </div>
 
       <TicketPreviewModal

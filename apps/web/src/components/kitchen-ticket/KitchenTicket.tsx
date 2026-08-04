@@ -4,11 +4,15 @@ import { formatPrice } from '@/lib/catalog';
 import { ORDER_TYPE_LABELS, PAYMENT_METHOD_LABELS } from '@/types/orders';
 import { getGoogleMapsUrl, hasDeliveryCoordinates } from '@/lib/maps';
 
+export const TICKET_COPIES = ['COCINA', 'CAJA', 'CLIENTE'] as const;
+export type TicketCopyLabel = (typeof TICKET_COPIES)[number];
+
 interface KitchenTicketProps {
   order: Order;
+  copyLabel?: TicketCopyLabel;
 }
 
-export function KitchenTicket({ order }: KitchenTicketProps) {
+export function KitchenTicket({ order, copyLabel = 'COCINA' }: KitchenTicketProps) {
   const typeLabel = ORDER_TYPE_LABELS[order.type];
   const pickupName = order.customerName?.trim() || null;
   const mesaName = pickupName || order.tableNumber?.trim() || null;
@@ -17,14 +21,14 @@ export function KitchenTicket({ order }: KitchenTicketProps) {
       ? mesaName || typeLabel
       : order.type === 'PARA_LLEVAR'
         ? pickupName || typeLabel
-      : order.type === 'DELIVERY'
-        ? 'DELIVERY'
-        : typeLabel;
+        : order.type === 'DELIVERY'
+          ? 'DELIVERY'
+          : typeLabel;
 
   return (
-    <div id="kitchen-ticket" className="kitchen-ticket">
+    <div className="kitchen-ticket">
       <div className="ticket-header">
-        <h1 className="ticket-title">COCINA</h1>
+        <h1 className="ticket-title">{copyLabel}</h1>
         <p className="ticket-order">{formatOrderNumber(order.orderNumber)}</p>
         <p className="ticket-time">{formatTime(order.createdAt)}</p>
         <p className="ticket-destination">{destination}</p>
@@ -139,8 +143,25 @@ export function KitchenTicket({ order }: KitchenTicketProps) {
 
       <hr className="ticket-divider" />
       <p className="ticket-footer">
-        {formatOrderNumber(order.orderNumber)} — {destination}
+        {formatOrderNumber(order.orderNumber)} — {destination} — {copyLabel}
       </p>
+    </div>
+  );
+}
+
+export function KitchenTicketPrintSet({ order }: { order: Order }) {
+  return (
+    <div id="kitchen-ticket-print-set" className="kitchen-ticket-print-set">
+      {TICKET_COPIES.map((copyLabel, index) => (
+        <div
+          key={copyLabel}
+          className={
+            index < TICKET_COPIES.length - 1 ? 'kitchen-ticket-copy' : undefined
+          }
+        >
+          <KitchenTicket order={order} copyLabel={copyLabel} />
+        </div>
+      ))}
     </div>
   );
 }
