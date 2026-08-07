@@ -1,83 +1,46 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { CartPanel } from '@/components/pos/CartPanel';
-import { MobileCartBar, MobileCartDrawer } from '@/components/pos/MobileCartDrawer';
-import { Input } from '@/components/ui/Input';
 import { Card } from '@/components/ui/Card';
-import { FilterChip } from '@/components/ui/FilterChip';
 import { FormError } from '@/components/ui/CrudForm';
-import { Modal } from '@/components/ui/Modal';
-import { Button } from '@/components/ui/Button';
-import { useCart } from '@/hooks/useCart';
+import { RestaurantLogo } from '@/components/layout/RestaurantLogo';
 import {
   getPublicMenu,
-  createPublicOrder,
   getPublicMenuErrorMessage,
 } from '@/lib/public-menu';
-import { DeliveryFormFields } from '@/components/orders/DeliveryFormFields';
-import { isDeliveryLocationComplete } from '@/lib/maps';
-import { ProductImage } from '@/components/ui/ProductImage';
-import { RestaurantLogo } from '@/components/layout/RestaurantLogo';
-import { formatPrice } from '@/lib/catalog';
-import { ProductPrice } from '@/components/catalog/ProductPrice';
-import {
-  canAddOneToCart,
-  isOutOfStock,
-  maxQuantityForCartLine,
-} from '@/lib/inventory';
-import { cartItemsToOrderInput } from '@/lib/cart-order';
-import {
-  SaucePickerModal,
-  productNeedsSaucePicker,
-} from '@/components/pos/SaucePickerModal';
-import type { CartSauce } from '@/hooks/useCart';
-import type { CatalogCategory } from '@/types/catalog';
-import { ORDER_TYPE_LABELS, type OrderType } from '@/types/orders';
 
-type CatalogProduct = CatalogCategory['products'][number];
-
-const ORDER_TYPES: Array<{ value: OrderType; label: string }> = [
-  { value: 'PARA_LLEVAR', label: '🥡 Para recojo' },
-  { value: 'DELIVERY', label: '🛵 Delivery' },
+const ORDER_OPTIONS = [
+  {
+    tipo: 'PARA_LLEVAR' as const,
+    emoji: '🥡',
+    title: 'Para recojo',
+    description: 'Pasa a recoger tu pedido en el local.',
+  },
+  {
+    tipo: 'DELIVERY' as const,
+    emoji: '🛵',
+    title: 'Delivery',
+    description: 'Te lo llevamos a la dirección que indiques.',
+  },
 ];
 
-export default function PublicMenuPage() {
+export default function PublicMenuGatePage() {
   const params = useParams();
   const router = useRouter();
   const slug = params.slug as string;
-  const cart = useCart();
   const [restaurantName, setRestaurantName] = useState('');
   const [restaurantLogo, setRestaurantLogo] = useState<string | null>(null);
-  const [catalog, setCatalog] = useState<CatalogCategory[]>([]);
-  const [activeCategory, setActiveCategory] = useState('');
   const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
-  const [cartOpen, setCartOpen] = useState(false);
-  const [customerName, setCustomerName] = useState('');
-  const [customerPhone, setCustomerPhone] = useState('');
-  const [deliveryAddress, setDeliveryAddress] = useState('');
-  const [deliveryReference, setDeliveryReference] = useState('');
-  const [deliveryLatitude, setDeliveryLatitude] = useState<number | null>(null);
-  const [deliveryLongitude, setDeliveryLongitude] = useState<number | null>(null);
-  const [orderType, setOrderType] = useState<OrderType>('PARA_LLEVAR');
-  const [confirmOpen, setConfirmOpen] = useState(false);
-  const [saucePickerProduct, setSaucePickerProduct] =
-    useState<CatalogProduct | null>(null);
 
-  const loadMenu = useCallback(async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     setError('');
     try {
       const data = await getPublicMenu(slug);
       setRestaurantName(data.restaurant.name);
       setRestaurantLogo(data.restaurant.logoUrl);
-      setCatalog(data.categories);
-      if (data.categories.length > 0) {
-        setActiveCategory(data.categories[0].id);
-      }
     } catch (e) {
       setError(getPublicMenuErrorMessage(e));
     } finally {
@@ -86,213 +49,28 @@ export default function PublicMenuPage() {
   }, [slug]);
 
   useEffect(() => {
-    loadMenu();
-  }, [loadMenu]);
+    void load();
+  }, [load]);
 
-  const productById = useMemo(() => {
-    const map = new Map<string, CatalogProduct>();
-    for (const cat of catalog) {
-      for (const p of cat.products) map.set(p.id, p);
-    }
-    return map;
-  }, [catalog]);
-
-  const getMaxQuantity = useCallback(
-    (item: { key: string; productId: string }) => {
-      const product = productById.get(item.productId);
-      if (!product) return Number.POSITIVE_INFINITY;
-      return maxQuantityForCartLine(product, cart.items, item.key);
-    },
-    [productById, cart.items],
-  );
-
-  const handleProductClick = (product: CatalogProduct) => {
-    if (isOutOfStock(product)) {
-      setError(`"${product.name}" no está disponible por ahora`);
-      return;
-    }
-    if (!canAddOneToCart(product, cart.items)) {
-      setError(`No puedes agregar más unidades de "${product.name}"`);
-      return;
-    }
-    setError('');
-    if (productNeedsSaucePicker(product)) {
-      setSaucePickerProduct(product);
-      return;
-    }
-    cart.addItem(product, []);
+  const handleSelect = (tipo: 'PARA_LLEVAR' | 'DELIVERY') => {
+    router.push(`/menu/${slug}/pedir?tipo=${tipo}`);
   };
-
-  const handleSauceConfirm = (sauces: CartSauce[]) => {
-    if (!saucePickerProduct) return;
-    cart.addItem(saucePickerProduct, [], sauces);
-    setSaucePickerProduct(null);
-  };
-
-  const validateBeforeSubmit = (): boolean => {
-    setError('');
-
-    if (!customerName.trim()) {
-      setError('Ingresa tu nombre');
-      return false;
-    }
-
-    if (!customerPhone.trim() || customerPhone.trim().length < 6) {
-      setError('Ingresa un teléfono válido');
-      return false;
-    }
-
-    if (orderType === 'DELIVERY') {
-      if (
-        !isDeliveryLocationComplete(
-          deliveryAddress,
-          deliveryLatitude,
-          deliveryLongitude,
-        )
-      ) {
-        setError('Marca tu ubicación en el mapa o ingresa la dirección');
-        return false;
-      }
-    }
-
-    if (cart.items.length === 0) {
-      setError('Agrega al menos un producto');
-      return false;
-    }
-
-    return true;
-  };
-
-  const handleSubmitClick = () => {
-    if (!validateBeforeSubmit()) {
-      setCartOpen(true);
-      return;
-    }
-    setCartOpen(false);
-    setConfirmOpen(true);
-  };
-
-  const handleConfirmSubmit = async () => {
-    if (!validateBeforeSubmit()) {
-      setConfirmOpen(false);
-      return;
-    }
-
-    setSubmitting(true);
-    try {
-      const order = await createPublicOrder(slug, {
-        type: orderType,
-        customerName: customerName.trim(),
-        customerPhone: customerPhone.trim(),
-        deliveryAddress:
-          orderType === 'DELIVERY' ? deliveryAddress.trim() : undefined,
-        deliveryReference:
-          orderType === 'DELIVERY'
-            ? deliveryReference.trim() || undefined
-            : undefined,
-        deliveryLatitude:
-          orderType === 'DELIVERY' && deliveryLatitude != null
-            ? deliveryLatitude
-            : undefined,
-        deliveryLongitude:
-          orderType === 'DELIVERY' && deliveryLongitude != null
-            ? deliveryLongitude
-            : undefined,
-        notes: cart.orderNotes || undefined,
-        items: cartItemsToOrderInput(cart.items),
-      });
-      cart.clearCart();
-      setCartOpen(false);
-      setConfirmOpen(false);
-      void loadMenu();
-      const track = order.publicTrackingToken;
-      if (track) {
-        router.push(`/menu/${slug}/seguimiento/${track}`);
-      } else {
-        router.push(
-          `/menu/${slug}/exito?n=${order.orderNumber}&total=${order.total}`,
-        );
-      }
-    } catch (e) {
-      setError(getPublicMenuErrorMessage(e));
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  const currentCategory = catalog.find((c) => c.id === activeCategory);
-
-  const customerFields = (
-    <div className="space-y-4 mb-4">
-      <div>
-        <p className="text-sm font-bold text-foreground mb-2">Tipo de pedido</p>
-        <div className="flex gap-2 flex-wrap">
-          {ORDER_TYPES.map(({ value, label }) => (
-            <FilterChip
-              key={value}
-              active={orderType === value}
-              onClick={() => setOrderType(value)}
-            >
-              {label}
-            </FilterChip>
-          ))}
-        </div>
-      </div>
-
-      {orderType === 'DELIVERY' ? (
-        <DeliveryFormFields
-          customerName={customerName}
-          customerPhone={customerPhone}
-          deliveryAddress={deliveryAddress}
-          deliveryReference={deliveryReference}
-          deliveryLatitude={deliveryLatitude}
-          deliveryLongitude={deliveryLongitude}
-          onCustomerNameChange={setCustomerName}
-          onCustomerPhoneChange={setCustomerPhone}
-          onDeliveryAddressChange={setDeliveryAddress}
-          onDeliveryReferenceChange={setDeliveryReference}
-          onDeliveryLocationChange={(lat, lng) => {
-            setDeliveryLatitude(lat);
-            setDeliveryLongitude(lng);
-          }}
-        />
-      ) : (
-        <>
-          <Input
-            label="Tu nombre"
-            placeholder="Ej: Juan Pérez"
-            value={customerName}
-            onChange={(e) => setCustomerName(e.target.value)}
-            required
-          />
-          <Input
-            label="Tu teléfono"
-            placeholder="Ej: 70000000"
-            type="tel"
-            value={customerPhone}
-            onChange={(e) => setCustomerPhone(e.target.value)}
-            required
-          />
-        </>
-      )}
-    </div>
-  );
 
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <p className="text-text-secondary font-medium">Cargando menú...</p>
+        <p className="text-text-secondary font-medium">Cargando...</p>
       </div>
     );
   }
 
-  if (error && catalog.length === 0) {
+  if (error) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background p-4">
-        <Card className="max-w-sm w-full text-center">
+        <Card className="max-w-sm w-full text-center" padding="lg">
           <FormError message={error} />
           <p className="text-sm text-text-secondary mt-3">
-            El menú no está disponible.
+            El menú no está disponible en este momento.
           </p>
         </Card>
       </div>
@@ -300,229 +78,48 @@ export default function PublicMenuPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-24 lg:pb-6">
-      <header className="bg-card border-b border-border px-4 py-4 sticky top-0 z-30 shadow-sm">
-        <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen bg-background flex flex-col">
+      <header className="bg-card border-b border-border px-4 py-6">
+        <div className="max-w-lg mx-auto">
           <RestaurantLogo
             name={restaurantName}
             logoUrl={restaurantLogo}
-            subtitle="Pedido en línea · recojo o delivery"
+            subtitle="¿Cómo quieres recibir tu pedido?"
             size="lg"
           />
         </div>
       </header>
 
-      <main className="max-w-6xl mx-auto p-4 lg:p-6">
-        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_420px] xl:grid-cols-[minmax(0,1fr)_440px] gap-5 lg:gap-6">
-          <div className="space-y-4 min-w-0">
-            <div className="flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
-              {catalog.map((cat) => (
-                <FilterChip
-                  key={cat.id}
-                  active={activeCategory === cat.id}
-                  onClick={() => setActiveCategory(cat.id)}
-                >
-                  {cat.name}
-                </FilterChip>
-              ))}
-            </div>
+      <main className="flex-1 flex items-center justify-center p-4">
+        <div className="w-full max-w-lg space-y-4">
+          <p className="text-center text-sm text-text-secondary font-medium">
+            Elige una opción para ver el menú y armar tu pedido.
+          </p>
 
-            {currentCategory?.products.length === 0 ? (
-              <Card className="text-center py-10">
-                <p className="text-text-secondary font-medium">
-                  No hay productos en esta categoría.
-                </p>
-              </Card>
-            ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 items-stretch">
-                {currentCategory?.products.map((product) => {
-                  const out = isOutOfStock(product);
-                  return (
-                  <button
-                    key={product.id}
-                    type="button"
-                    disabled={out}
-                    onClick={() => handleProductClick(product)}
-                    className={`flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-card text-left shadow-sm transition ${
-                      out
-                        ? 'opacity-50 cursor-not-allowed'
-                        : 'hover:border-primary/25 hover:shadow-md active:scale-[0.98]'
-                    }`}
-                  >
-                    <ProductImage
-                      src={product.imageUrl}
-                      alt={product.name}
-                      aspect="menu"
-                      className="w-full shrink-0 rounded-none"
-                    />
-                    <div className="flex flex-1 flex-col p-3">
-                      <p className="font-bold text-foreground text-sm leading-tight">
-                        {product.name}
-                      </p>
-                      {product.description && (
-                        <p className="text-xs text-text-secondary mt-1 line-clamp-2">
-                          {product.description}
-                        </p>
-                      )}
-                      <div className="mt-auto pt-2">
-                        <ProductPrice
-                          price={product.price}
-                          effectivePrice={product.effectivePrice}
-                          hasPromotion={product.hasPromotion}
-                          promoLabel={product.promoLabel}
-                          showBadge
-                        />
-                      </div>
-                      {out && (
-                        <p className="text-[10px] font-bold text-red-400 mt-2">
-                          Agotado
-                        </p>
-                      )}
-                    </div>
-                  </button>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-
-          <div className="hidden lg:block min-w-0">
-            <Card className="sticky top-24" padding="lg">
-              {customerFields}
-              <CartPanel
-                cart={cart}
-                error={error}
-                submitting={submitting}
-                onSubmit={handleSubmitClick}
-                submitLabel="Enviar pedido"
-                getMaxQuantity={getMaxQuantity}
-              />
-            </Card>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {ORDER_OPTIONS.map((option) => (
+              <button
+                key={option.tipo}
+                type="button"
+                onClick={() => handleSelect(option.tipo)}
+                className="group flex flex-col items-start gap-3 rounded-2xl border border-border bg-card p-5 text-left shadow-sm transition hover:border-primary/30 hover:shadow-md active:scale-[0.98]"
+              >
+                <span className="text-4xl" aria-hidden>
+                  {option.emoji}
+                </span>
+                <div>
+                  <p className="text-lg font-extrabold text-foreground group-hover:text-primary transition">
+                    {option.title}
+                  </p>
+                  <p className="text-sm text-text-secondary mt-1 leading-relaxed">
+                    {option.description}
+                  </p>
+                </div>
+              </button>
+            ))}
           </div>
         </div>
       </main>
-
-      <Modal
-        open={confirmOpen}
-        onClose={() => !submitting && setConfirmOpen(false)}
-        title="¿Confirmar pedido?"
-      >
-        <div className="space-y-4">
-          <p className="text-sm text-text-secondary">
-            Revisa los datos antes de enviar tu pedido al restaurante.
-          </p>
-          <div className="rounded-xl border border-border bg-background/50 p-3 text-sm space-y-1">
-            <p>
-              <span className="text-text-secondary">Tipo: </span>
-              <span className="font-semibold text-foreground">
-                {ORDER_TYPE_LABELS[orderType]}
-              </span>
-            </p>
-            <p>
-              <span className="text-text-secondary">Nombre: </span>
-              <span className="font-semibold text-foreground">
-                {customerName.trim()}
-              </span>
-            </p>
-            <p>
-              <span className="text-text-secondary">Teléfono: </span>
-              <span className="font-semibold text-foreground">
-                {customerPhone.trim()}
-              </span>
-            </p>
-            {orderType === 'DELIVERY' && deliveryAddress.trim() && (
-              <p>
-                <span className="text-text-secondary">Dirección: </span>
-                <span className="font-semibold text-foreground">
-                  {deliveryAddress.trim()}
-                </span>
-              </p>
-            )}
-            {orderType === 'DELIVERY' && deliveryReference.trim() && (
-              <p>
-                <span className="text-text-secondary">Referencia: </span>
-                <span className="text-foreground">{deliveryReference.trim()}</span>
-              </p>
-            )}
-          </div>
-          <ul className="space-y-2 text-sm">
-            {cart.items.map((item) => {
-              const unit =
-                item.basePrice +
-                item.extras.reduce((s, e) => s + e.price, 0);
-              return (
-              <li
-                key={item.key}
-                className="flex justify-between gap-3 border-b border-border/60 pb-2 last:border-0 last:pb-0"
-              >
-                <span className="text-foreground">
-                  {item.quantity}× {item.productName}
-                </span>
-                <span className="font-semibold text-foreground shrink-0">
-                  {formatPrice(unit * item.quantity)}
-                </span>
-              </li>
-              );
-            })}
-          </ul>
-          {cart.orderNotes.trim() && (
-            <p className="text-sm">
-              <span className="text-text-secondary">Nota: </span>
-              {cart.orderNotes.trim()}
-            </p>
-          )}
-          <p className="flex justify-between items-center pt-1 text-base font-extrabold text-foreground">
-            <span>Total</span>
-            <span className="text-primary">{formatPrice(cart.subtotal)}</span>
-          </p>
-          {error && <FormError message={error} />}
-          <div className="flex flex-col-reverse sm:flex-row gap-2 pt-2">
-            <Button
-              type="button"
-              variant="secondary"
-              className="sm:flex-1"
-              disabled={submitting}
-              onClick={() => setConfirmOpen(false)}
-            >
-              Volver
-            </Button>
-            <Button
-              type="button"
-              className="sm:flex-1"
-              disabled={submitting}
-              onClick={() => void handleConfirmSubmit()}
-            >
-              {submitting ? 'Enviando…' : 'Sí, enviar pedido'}
-            </Button>
-          </div>
-        </div>
-      </Modal>
-
-      <MobileCartBar
-        itemCount={cart.itemCount}
-        total={cart.subtotal}
-        onOpen={() => setCartOpen(true)}
-      />
-
-      <MobileCartDrawer
-        open={cartOpen}
-        onClose={() => setCartOpen(false)}
-        cart={cart}
-        error={error}
-        submitting={submitting}
-        onSubmit={handleSubmitClick}
-        submitLabel="Enviar pedido"
-        header={customerFields}
-        wide
-        getMaxQuantity={getMaxQuantity}
-      />
-
-      <SaucePickerModal
-        open={!!saucePickerProduct}
-        product={saucePickerProduct}
-        onClose={() => setSaucePickerProduct(null)}
-        onConfirm={handleSauceConfirm}
-      />
     </div>
   );
 }
