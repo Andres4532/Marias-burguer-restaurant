@@ -4,7 +4,7 @@ import {
   ConflictException,
   BadRequestException,
 } from '@nestjs/common';
-import { ProductPromoType } from '@prisma/client';
+import { ProductPromoType, ProductSauceMode } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
@@ -41,6 +41,16 @@ export class ProductsService {
         isActive: boolean;
       };
     }>;
+    sauceMode?: ProductSauceMode;
+    allowSauceSeparate?: boolean;
+    sauces?: Array<{
+      sauce: {
+        id: string;
+        name: string;
+        isActive: boolean;
+        sortOrder: number;
+      };
+    }>;
   }) {
     const promo = mapProductPromoFields(product);
 
@@ -69,6 +79,17 @@ export class ProductsService {
         price: toNumber(pe.extra.price),
         isActive: pe.extra.isActive,
       })),
+      sauceMode: product.sauceMode ?? ProductSauceMode.NONE,
+      allowSauceSeparate: product.allowSauceSeparate ?? true,
+      sauces: product.sauces
+        ?.map((ps) => ({
+          id: ps.sauce.id,
+          name: ps.sauce.name,
+          isActive: ps.sauce.isActive,
+          sortOrder: ps.sauce.sortOrder,
+        }))
+        .filter((sauce) => sauce.isActive)
+        .sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name)) ?? [],
       createdAt: product.createdAt,
       updatedAt: product.updatedAt,
     };
@@ -154,6 +175,53 @@ export class ProductsService {
     return category;
   }
 
+  private async validateSauces(sauceIds: string[]) {
+    if (!sauceIds.length) return;
+
+    const sauces = await this.prisma.sauce.findMany({
+      where: { id: { in: sauceIds }, deletedAt: null },
+    });
+
+    if (sauces.length !== sauceIds.length) {
+      throw new BadRequestException('Una o más salsas no son válidas');
+    }
+  }
+
+  private validateSauceConfig(
+    sauceMode: ProductSauceMode,
+    sauceIds: string[],
+  ) {
+    if (sauceMode === ProductSauceMode.NONE) {
+      return { sauceMode, allowSauceSeparate: true, sauceIds: [] as string[] };
+    }
+
+    if (!sauceIds.length) {
+      throw new BadRequestException(
+        'Selecciona al menos una salsa para este producto',
+      );
+    }
+
+    return { sauceMode, sauceIds };
+  }
+
+  private productInclude = {
+    category: { select: { id: true, name: true } },
+    extras: {
+      include: {
+        extra: {
+          select: { id: true, name: true, price: true, isActive: true },
+        },
+      },
+    },
+    sauces: {
+      include: {
+        sauce: {
+          select: { id: true, name: true, isActive: true, sortOrder: true },
+        },
+      },
+    },
+  } as const;
+
   private async validateExtras(extraIds: string[]) {
     if (!extraIds.length) return;
 
@@ -179,16 +247,7 @@ export class ProductsService {
         ...(trackStockOnly ? { trackStock: true } : {}),
       },
       orderBy: [{ category: { sortOrder: 'asc' } }, { sortOrder: 'asc' }],
-      include: {
-        category: { select: { id: true, name: true } },
-        extras: {
-          include: {
-            extra: {
-              select: { id: true, name: true, price: true, isActive: true },
-            },
-          },
-        },
-      },
+      include: this.productInclude,
     });
 
     return products.map((p) => this.mapProduct(p));
@@ -197,16 +256,7 @@ export class ProductsService {
   async findOne(id: string) {
     const product = await this.prisma.product.findFirst({
       where: { id, deletedAt: null },
-      include: {
-        category: { select: { id: true, name: true } },
-        extras: {
-          include: {
-            extra: {
-              select: { id: true, name: true, price: true, isActive: true },
-            },
-          },
-        },
-      },
+      include: this.productInclude,
     });
 
     if (!product) {
@@ -232,6 +282,10 @@ export class ProductsService {
     const extraIds = dto.extraIds ?? [];
     await this.validateExtras(extraIds);
 
+    const sauceMode = dto.sauceMode ?? ProductSauceMode.NONE;
+    const sauceConfig = this.validateSauceConfig(sauceMode, dto.sauceIds ?? []);
+    await this.validateSauces(sauceConfig.sauceIds);
+
     const promo = this.validatePromo(
       dto.price,
       dto.promoType,
@@ -255,11 +309,20 @@ export class ProductsService {
         promoValue: promo.promoValue,
         promoStartsAt: promo.promoStartsAt,
         promoEndsAt: promo.promoEndsAt,
+        sauceMode: sauceConfig.sauceMode,
+        allowSauceSeparate: dto.allowSauceSeparate ?? true,
         extras: extraIds.length
           ? {
               create: extraIds.map((extraId) => ({ extraId })),
             }
           : undefined,
+        sauces:
+          sauceConfig.sauceMode !== ProductSauceMode.NONE &&
+          sauceConfig.sauceIds.length
+            ? {
+                create: sauceConfig.sauceIds.map((sauceId) => ({ sauceId })),
+              }
+            : undefined,
       },
     });
 
@@ -294,10 +357,29 @@ export class ProductsService {
       }
     }
 
-    const { extraIds, promoType, promoValue, promoStartsAt, promoEndsAt, ...rest } =
-      dto;
+    const {
+      extraIds,
+      sauceIds,
+      promoType,
+      promoValue,
+      promoStartsAt,
+      promoEndsAt,
+      ...rest
+    } = dto;
 
     const nextPrice = dto.price ?? current.price;
+    const resolvedSauceMode =
+      dto.sauceMode !== undefined ? dto.sauceMode : current.sauceMode;
+    const resolvedSauceIds =
+      sauceIds !== undefined
+        ? sauceIds
+        : resolvedSauceMode === ProductSauceMode.NONE
+          ? []
+          : current.sauces.map((sauce) => sauce.id);
+    const sauceConfig = this.validateSauceConfig(
+      resolvedSauceMode,
+      resolvedSauceIds,
+    );
     const resolvedPromoType =
       promoType !== undefined ? promoType : current.promoType;
     const resolvedPromoValue =
@@ -334,13 +416,25 @@ export class ProductsService {
       promoValue: promo.promoValue,
       promoStartsAt: promo.promoStartsAt,
       promoEndsAt: promo.promoEndsAt,
+      sauceMode: sauceConfig.sauceMode,
+      allowSauceSeparate:
+        dto.allowSauceSeparate !== undefined
+          ? dto.allowSauceSeparate
+          : current.allowSauceSeparate,
     };
 
     if (dto.trackStock === false) {
       productData.stockQuantity = 0;
     }
 
-    if (extraIds !== undefined) {
+    const shouldUpdateSauces =
+      sauceIds !== undefined || dto.sauceMode !== undefined;
+
+    if (shouldUpdateSauces) {
+      await this.validateSauces(sauceConfig.sauceIds);
+    }
+
+    if (extraIds !== undefined && shouldUpdateSauces) {
       await this.validateExtras(extraIds);
 
       await this.prisma.$transaction([
@@ -351,6 +445,51 @@ export class ProductsService {
                 data: extraIds.map((extraId) => ({
                   productId: id,
                   extraId,
+                })),
+              }),
+            ]
+          : []),
+        this.prisma.productSauce.deleteMany({ where: { productId: id } }),
+        ...(sauceConfig.sauceMode !== ProductSauceMode.NONE &&
+        sauceConfig.sauceIds.length
+          ? [
+              this.prisma.productSauce.createMany({
+                data: sauceConfig.sauceIds.map((sauceId) => ({
+                  productId: id,
+                  sauceId,
+                })),
+              }),
+            ]
+          : []),
+        this.prisma.product.update({ where: { id }, data: productData }),
+      ]);
+    } else if (extraIds !== undefined) {
+      await this.validateExtras(extraIds);
+
+      await this.prisma.$transaction([
+        this.prisma.productExtra.deleteMany({ where: { productId: id } }),
+        ...(extraIds.length
+          ? [
+              this.prisma.productExtra.createMany({
+                data: extraIds.map((extraId) => ({
+                  productId: id,
+                  extraId,
+                })),
+              }),
+            ]
+          : []),
+        this.prisma.product.update({ where: { id }, data: productData }),
+      ]);
+    } else if (shouldUpdateSauces) {
+      await this.prisma.$transaction([
+        this.prisma.productSauce.deleteMany({ where: { productId: id } }),
+        ...(sauceConfig.sauceMode !== ProductSauceMode.NONE &&
+        sauceConfig.sauceIds.length
+          ? [
+              this.prisma.productSauce.createMany({
+                data: sauceConfig.sauceIds.map((sauceId) => ({
+                  productId: id,
+                  sauceId,
                 })),
               }),
             ]

@@ -3,6 +3,7 @@
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
 import { formatPrice } from '@/lib/catalog';
+import { formatCartSauceLine } from '@/lib/sauce-labels';
 import { ORDER_TYPE_LABELS } from '@/types/orders';
 import type { useCart, CartItem } from '@/hooks/useCart';
 
@@ -70,6 +71,14 @@ export function CartPanel({
                     {item.extras.length > 0 && (
                       <p className="text-xs text-text-secondary mt-0.5">
                         {item.extras.map((e) => e.name).join(' · ')}
+                      </p>
+                    )}
+                    {item.sauces.length > 0 && (
+                      <p className="text-xs text-text-secondary mt-0.5">
+                        Salsa:{' '}
+                        {item.sauces
+                          .map((s) => formatCartSauceLine(s.name, s.placement))
+                          .join(' · ')}
                       </p>
                     )}
                     <p className="text-xs text-text-secondary mt-0.5">

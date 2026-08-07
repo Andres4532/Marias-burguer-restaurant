@@ -13,7 +13,16 @@ import {
   Max,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { OrderType } from '@prisma/client';
+import { OrderType, SaucePlacement } from '@prisma/client';
+
+export class CreateOrderItemSauceDto {
+  @IsString()
+  @IsNotEmpty()
+  sauceId: string;
+
+  @IsEnum(SaucePlacement)
+  placement: SaucePlacement;
+}
 
 export class CreateOrderItemDto {
   @IsString()
@@ -28,6 +37,12 @@ export class CreateOrderItemDto {
   @IsArray()
   @IsString({ each: true })
   extraIds?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CreateOrderItemSauceDto)
+  sauces?: CreateOrderItemSauceDto[];
 
   @IsOptional()
   @IsString()

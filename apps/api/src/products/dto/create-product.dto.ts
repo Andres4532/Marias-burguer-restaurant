@@ -13,7 +13,7 @@ import {
   IsEnum,
   IsDateString,
 } from 'class-validator';
-import { ProductPromoType } from '@prisma/client';
+import { ProductPromoType, ProductSauceMode } from '@prisma/client';
 import { HTTP_URL_VALIDATION_OPTIONS } from '../../common/validation/url-options';
 
 export class CreateProductDto {
@@ -80,4 +80,17 @@ export class CreateProductDto {
   @ValidateIf((_, value) => value != null && value !== '')
   @IsDateString()
   promoEndsAt?: string | null;
+
+  @IsOptional()
+  @IsEnum(ProductSauceMode)
+  sauceMode?: ProductSauceMode;
+
+  @IsOptional()
+  @IsBoolean()
+  allowSauceSeparate?: boolean;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  sauceIds?: string[];
 }

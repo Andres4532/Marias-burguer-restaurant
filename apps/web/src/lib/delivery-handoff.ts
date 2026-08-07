@@ -10,8 +10,12 @@ function formatOrderItems(order: Order): string {
         item.extras.length > 0
           ? ` (${item.extras.map((e) => e.extraName).join(', ')})`
           : '';
+      const sauces =
+        item.sauces.length > 0
+          ? ` [Salsa: ${item.sauces.map((s) => (s.placement === 'SEPARATE' ? `${s.sauceName} aparte` : s.sauceName)).join(', ')}]`
+          : '';
       const note = item.notes ? ` — Nota: ${item.notes}` : '';
-      return `• ${item.quantity}× ${item.productName}${extras}${note}`;
+      return `• ${item.quantity}× ${item.productName}${extras}${sauces}${note}`;
     })
     .join('\n');
 }

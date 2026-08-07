@@ -1,6 +1,12 @@
 import { Injectable } from '@nestjs/common';
+import { ProductSauceMode } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { mapProductPromoFields } from '../common/utils/product-pricing.util';
+
+export type CatalogSauce = {
+  id: string;
+  name: string;
+};
 
 export type CatalogResponse = {
   categories: Array<{
@@ -19,6 +25,9 @@ export type CatalogResponse = {
       sortOrder: number;
       trackStock: boolean;
       stockQuantity: number;
+      sauceMode: ProductSauceMode;
+      allowSauceSeparate: boolean;
+      sauces: CatalogSauce[];
     }>;
   }>;
 };
@@ -35,6 +44,15 @@ export class CatalogService {
         products: {
           where: { deletedAt: null, isActive: true },
           orderBy: { sortOrder: 'asc' },
+          include: {
+            sauces: {
+              include: {
+                sauce: {
+                  select: { id: true, name: true, isActive: true, sortOrder: true },
+                },
+              },
+            },
+          },
         },
       },
     });
@@ -58,6 +76,16 @@ export class CatalogService {
             sortOrder: product.sortOrder,
             trackStock: product.trackStock,
             stockQuantity: product.stockQuantity,
+            sauceMode: product.sauceMode,
+            allowSauceSeparate: product.allowSauceSeparate,
+            sauces: product.sauces
+              .map((entry) => entry.sauce)
+              .filter((sauce) => sauce.isActive)
+              .sort(
+                (a, b) =>
+                  a.sortOrder - b.sortOrder || a.name.localeCompare(b.name),
+              )
+              .map((sauce) => ({ id: sauce.id, name: sauce.name })),
           };
         }),
       })),

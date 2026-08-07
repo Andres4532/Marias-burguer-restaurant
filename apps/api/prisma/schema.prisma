@@ -50,6 +50,17 @@ enum ProductPromoType {
   FIXED_PRICE
 }
 
+enum ProductSauceMode {
+  NONE
+  SINGLE
+  MULTIPLE
+}
+
+enum SaucePlacement {
+  ON_PRODUCT
+  SEPARATE
+}
+
 model User {
   id           String   @id @default(cuid())
   email        String   @unique
@@ -92,12 +103,38 @@ model Product {
   promoValue    Decimal?  @db.Decimal(10, 2)
   promoStartsAt DateTime?
   promoEndsAt   DateTime?
+  sauceMode           ProductSauceMode @default(NONE)
+  allowSauceSeparate  Boolean          @default(true)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 
   category   Category       @relation(fields: [categoryId], references: [id])
   extras     ProductExtra[]
+  sauces     ProductSauce[]
   orderItems OrderItem[]
+}
+
+model Sauce {
+  id        String    @id @default(cuid())
+  name      String
+  isActive  Boolean   @default(true)
+  sortOrder Int       @default(0)
+  deletedAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  products        ProductSauce[]
+  orderItemSauces OrderItemSauce[]
+}
+
+model ProductSauce {
+  productId String
+  sauceId   String
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  sauce   Sauce   @relation(fields: [sauceId], references: [id], onDelete: Cascade)
+
+  @@id([productId, sauceId])
 }
 
 model Extra {
@@ -185,6 +222,18 @@ model OrderItem {
   order   Order            @relation(fields: [orderId], references: [id], onDelete: Cascade)
   product Product          @relation(fields: [productId], references: [id])
   extras  OrderItemExtra[]
+  sauces  OrderItemSauce[]
+}
+
+model OrderItemSauce {
+  id          String         @id @default(cuid())
+  orderItemId String
+  sauceId     String
+  sauceName   String
+  placement   SaucePlacement @default(ON_PRODUCT)
+
+  orderItem OrderItem @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+  sauce     Sauce     @relation(fields: [sauceId], references: [id])
 }
 
 model OrderItemExtra {

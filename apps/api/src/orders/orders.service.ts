@@ -12,6 +12,8 @@ import {
   Prisma,
   PaymentStatus,
   UserRole,
+  ProductSauceMode,
+  SaucePlacement,
 } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateOrderDto } from './dto/create-order.dto';
@@ -136,7 +138,7 @@ export class OrdersService {
 
   private orderInclude = {
     createdBy: { select: { id: true, name: true } },
-    items: { include: { extras: true } },
+    items: { include: { extras: true, sauces: true } },
     payments: { where: { status: PaymentStatus.PAGADO } },
   };
 
@@ -187,6 +189,12 @@ export class OrdersService {
         extraName: string;
         price: { toString(): string };
       }>;
+      sauces: Array<{
+        id: string;
+        sauceId: string;
+        sauceName: string;
+        placement: SaucePlacement;
+      }>;
     }>;
   }) {
     return {
@@ -230,6 +238,12 @@ export class OrdersService {
           extraId: e.extraId,
           extraName: e.extraName,
           price: toNumber(e.price),
+        })),
+        sauces: item.sauces.map((s) => ({
+          id: s.id,
+          sauceId: s.sauceId,
+          sauceName: s.sauceName,
+          placement: s.placement,
         })),
       })),
     };
@@ -413,6 +427,13 @@ export class OrdersService {
     const productIds = items.map((i) => i.productId);
     const products = await this.prisma.product.findMany({
       where: { id: { in: productIds }, deletedAt: null, isActive: true },
+      include: {
+        sauces: {
+          include: {
+            sauce: true,
+          },
+        },
+      },
     });
 
     if (products.length !== productIds.length) {
@@ -445,11 +466,17 @@ export class OrdersService {
       lineTotal: number;
       notes?: string;
       extras: Array<{ extraId: string; extraName: string; price: number }>;
+      sauces: Array<{
+        sauceId: string;
+        sauceName: string;
+        placement: SaucePlacement;
+      }>;
     }> = [];
 
     for (const item of items) {
       const product = productMap.get(item.productId)!;
       const extraIds = item.extraIds ?? [];
+      const requestedSauces = item.sauces ?? [];
 
       for (const extraId of extraIds) {
         if (!extraMap.has(extraId)) {
@@ -458,6 +485,69 @@ export class OrdersService {
           );
         }
       }
+
+      const allowedSauceIds = new Set(
+        product.sauces
+          .filter((entry) => entry.sauce.isActive && !entry.sauce.deletedAt)
+          .map((entry) => entry.sauce.id),
+      );
+
+      if (product.sauceMode === ProductSauceMode.NONE) {
+        if (requestedSauces.length > 0) {
+          throw new BadRequestException(
+            `El producto ${product.name} no permite salsas`,
+          );
+        }
+      } else if (!requestedSauces.length) {
+        throw new BadRequestException(
+          `Selecciona al menos una salsa para ${product.name}`,
+        );
+      } else if (
+        product.sauceMode === ProductSauceMode.SINGLE &&
+        requestedSauces.length !== 1
+      ) {
+        throw new BadRequestException(
+          `Selecciona solo una salsa para ${product.name}`,
+        );
+      } else if (product.sauceMode === ProductSauceMode.MULTIPLE) {
+        const uniqueSauceIds = new Set(requestedSauces.map((s) => s.sauceId));
+        if (uniqueSauceIds.size !== requestedSauces.length) {
+          throw new BadRequestException(
+            `No repitas la misma salsa en ${product.name}`,
+          );
+        }
+      }
+
+      const selectedSauces = requestedSauces.map((selection) => {
+        if (!allowedSauceIds.has(selection.sauceId)) {
+          throw new BadRequestException(
+            `La salsa seleccionada no está disponible para ${product.name}`,
+          );
+        }
+
+        const sauce = product.sauces.find(
+          (entry) => entry.sauce.id === selection.sauceId,
+        )!.sauce;
+
+        const placement = product.allowSauceSeparate
+          ? selection.placement
+          : SaucePlacement.ON_PRODUCT;
+
+        if (
+          !product.allowSauceSeparate &&
+          selection.placement === SaucePlacement.SEPARATE
+        ) {
+          throw new BadRequestException(
+            `Este producto no permite salsa aparte`,
+          );
+        }
+
+        return {
+          sauceId: sauce.id,
+          sauceName: sauce.name,
+          placement,
+        };
+      });
 
       const selectedExtras = extraIds.map((extraId) => {
         const extra = extraMap.get(extraId)!;
@@ -482,6 +572,7 @@ export class OrdersService {
         lineTotal,
         notes: item.notes,
         extras: selectedExtras,
+        sauces: selectedSauces,
       });
     }
 
@@ -571,6 +662,9 @@ export class OrdersService {
               notes: item.notes,
               extras: item.extras.length
                 ? { create: item.extras }
+                : undefined,
+              sauces: item.sauces.length
+                ? { create: item.sauces }
                 : undefined,
             })),
           },
@@ -797,6 +891,9 @@ export class OrdersService {
               notes: item.notes,
               extras: item.extras.length
                 ? { create: item.extras }
+                : undefined,
+              sauces: item.sauces.length
+                ? { create: item.sauces }
                 : undefined,
             })),
           },

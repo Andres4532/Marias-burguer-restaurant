@@ -27,6 +27,12 @@ import {
   isOutOfStock,
   maxQuantityForCartLine,
 } from '@/lib/inventory';
+import { cartItemsToOrderInput } from '@/lib/cart-order';
+import {
+  SaucePickerModal,
+  productNeedsSaucePicker,
+} from '@/components/pos/SaucePickerModal';
+import type { CartSauce } from '@/hooks/useCart';
 import type { CatalogCategory } from '@/types/catalog';
 import { ORDER_TYPE_LABELS, type OrderType } from '@/types/orders';
 
@@ -58,6 +64,8 @@ export default function PublicMenuPage() {
   const [deliveryLongitude, setDeliveryLongitude] = useState<number | null>(null);
   const [orderType, setOrderType] = useState<OrderType>('PARA_LLEVAR');
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [saucePickerProduct, setSaucePickerProduct] =
+    useState<CatalogProduct | null>(null);
 
   const loadMenu = useCallback(async () => {
     setLoading(true);
@@ -108,7 +116,17 @@ export default function PublicMenuPage() {
       return;
     }
     setError('');
+    if (productNeedsSaucePicker(product)) {
+      setSaucePickerProduct(product);
+      return;
+    }
     cart.addItem(product, []);
+  };
+
+  const handleSauceConfirm = (sauces: CartSauce[]) => {
+    if (!saucePickerProduct) return;
+    cart.addItem(saucePickerProduct, [], sauces);
+    setSaucePickerProduct(null);
   };
 
   const validateBeforeSubmit = (): boolean => {
@@ -181,12 +199,7 @@ export default function PublicMenuPage() {
             ? deliveryLongitude
             : undefined,
         notes: cart.orderNotes || undefined,
-        items: cart.items.map((item) => ({
-          productId: item.productId,
-          quantity: item.quantity,
-          extraIds: item.extras.length ? item.extras.map((e) => e.id) : undefined,
-          notes: item.notes,
-        })),
+        items: cartItemsToOrderInput(cart.items),
       });
       cart.clearCart();
       setCartOpen(false);
@@ -502,6 +515,13 @@ export default function PublicMenuPage() {
         header={customerFields}
         wide
         getMaxQuantity={getMaxQuantity}
+      />
+
+      <SaucePickerModal
+        open={!!saucePickerProduct}
+        product={saucePickerProduct}
+        onClose={() => setSaucePickerProduct(null)}
+        onConfirm={handleSauceConfirm}
       />
     </div>
   );

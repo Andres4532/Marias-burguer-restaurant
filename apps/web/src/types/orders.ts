@@ -15,6 +15,15 @@ export interface OrderItemExtra {
   price: number;
 }
 
+export type SaucePlacement = 'ON_PRODUCT' | 'SEPARATE';
+
+export interface OrderItemSauce {
+  id: string;
+  sauceId: string;
+  sauceName: string;
+  placement: SaucePlacement;
+}
+
 export interface OrderItem {
   id: string;
   productId: string;
@@ -24,6 +33,7 @@ export interface OrderItem {
   lineTotal: number;
   notes: string | null;
   extras: OrderItemExtra[];
+  sauces: OrderItemSauce[];
 }
 
 export type PaymentMethod = 'EFECTIVO' | 'QR' | 'TARJETA';
@@ -77,10 +87,16 @@ export interface PayOrderBillingInput {
   billingComplement?: string;
 }
 
+export interface CreateOrderItemSauceInput {
+  sauceId: string;
+  placement: SaucePlacement;
+}
+
 export interface CreateOrderItemInput {
   productId: string;
   quantity: number;
   extraIds?: string[];
+  sauces?: CreateOrderItemSauceInput[];
   notes?: string;
 }
 

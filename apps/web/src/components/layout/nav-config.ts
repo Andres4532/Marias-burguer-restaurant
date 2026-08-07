@@ -12,6 +12,7 @@ export interface NavItem {
     | 'config'
     | 'categorias'
     | 'productos'
+    | 'salsas'
     | 'inventario'
     | 'ordenMenu';
 }
@@ -27,6 +28,7 @@ export const jefaNavItems: NavItem[] = [
   { href: '/configuracion', label: 'Configuración', icon: 'config' },
   { href: '/categorias', label: 'Categorías', icon: 'categorias' },
   { href: '/productos', label: 'Productos', icon: 'productos' },
+  { href: '/salsas', label: 'Salsas', icon: 'salsas' },
   { href: '/orden-menu', label: 'Orden del menú', icon: 'ordenMenu' },
   { href: '/inventario', label: 'Inventario', icon: 'inventario' },
 ];
@@ -56,6 +58,7 @@ export function isNavActive(pathname: string, href: string): boolean {
   if (href === '/configuracion' && pathname.startsWith('/configuracion')) return true;
   if (href === '/inventario' && pathname.startsWith('/inventario')) return true;
   if (href === '/orden-menu' && pathname.startsWith('/orden-menu')) return true;
+  if (href === '/salsas' && pathname.startsWith('/salsas')) return true;
   if (href === '/cobro' && pathname.startsWith('/cobro')) return false;
   return false;
 }

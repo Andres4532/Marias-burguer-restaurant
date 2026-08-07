@@ -1,4 +1,20 @@
 export type ProductPromoType = 'NONE' | 'PERCENT' | 'FIXED_PRICE';
+export type ProductSauceMode = 'NONE' | 'SINGLE' | 'MULTIPLE';
+export type SaucePlacement = 'ON_PRODUCT' | 'SEPARATE';
+
+export interface Sauce {
+  id: string;
+  name: string;
+  isActive: boolean;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ProductSauceOption {
+  id: string;
+  name: string;
+}
 
 export interface Category {
   id: string;
@@ -29,6 +45,9 @@ export interface Product {
   sortOrder: number;
   trackStock: boolean;
   stockQuantity: number;
+  sauceMode: ProductSauceMode;
+  allowSauceSeparate: boolean;
+  sauces: ProductSauceOption[];
   createdAt: string;
   updatedAt: string;
 }
@@ -53,6 +72,9 @@ export interface CatalogCategory {
     sortOrder: number;
     trackStock: boolean;
     stockQuantity: number;
+    sauceMode: ProductSauceMode;
+    allowSauceSeparate: boolean;
+    sauces: ProductSauceOption[];
   }>;
 }
 
@@ -76,4 +98,13 @@ export interface CreateProductInput {
   promoValue?: number;
   promoStartsAt?: string | null;
   promoEndsAt?: string | null;
+  sauceMode?: ProductSauceMode;
+  allowSauceSeparate?: boolean;
+  sauceIds?: string[];
+}
+
+export interface CreateSauceInput {
+  name: string;
+  sortOrder?: number;
+  isActive?: boolean;
 }

@@ -33,8 +33,16 @@ import {
   formatPrice,
   getErrorMessage,
 } from '@/lib/catalog';
+import { getSauces } from '@/lib/sauces';
+import { SAUCE_MODE_LABELS } from '@/lib/sauce-labels';
 import { uploadProductImage } from '@/lib/uploads';
-import type { Product, Category, ProductPromoType } from '@/types/catalog';
+import type {
+  Product,
+  Category,
+  ProductPromoType,
+  ProductSauceMode,
+  Sauce,
+} from '@/types/catalog';
 import { ProductPrice } from '@/components/catalog/ProductPrice';
 import { getSortOrderForEnd } from '@/lib/sort-order';
 
@@ -50,6 +58,7 @@ export default function ProductosPage() {
   const { loading, isJefa } = useRequireJefa();
   const [items, setItems] = useState<Product[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [sauceOptions, setSauceOptions] = useState<Sauce[]>([]);
   const [loadingData, setLoadingData] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Product | null>(null);
@@ -73,16 +82,21 @@ export default function ProductosPage() {
   const [promoValue, setPromoValue] = useState('');
   const [promoStartsAt, setPromoStartsAt] = useState('');
   const [promoEndsAt, setPromoEndsAt] = useState('');
+  const [sauceMode, setSauceMode] = useState<ProductSauceMode>('NONE');
+  const [allowSauceSeparate, setAllowSauceSeparate] = useState(true);
+  const [selectedSauceIds, setSelectedSauceIds] = useState<string[]>([]);
 
   const load = useCallback(async () => {
     setLoadingData(true);
     try {
-      const [products, cats] = await Promise.all([
+      const [products, cats, sauces] = await Promise.all([
         getProducts(undefined, true),
         getCategories(true),
+        getSauces(true),
       ]);
       setItems(products);
       setCategories(cats);
+      setSauceOptions(sauces.filter((s) => s.isActive));
     } catch (e) {
       setError(getErrorMessage(e));
     } finally {
@@ -110,6 +124,9 @@ export default function ProductosPage() {
     setPromoValue('');
     setPromoStartsAt('');
     setPromoEndsAt('');
+    setSauceMode('NONE');
+    setAllowSauceSeparate(true);
+    setSelectedSauceIds([]);
     setError('');
     setModalOpen(true);
   };
@@ -129,6 +146,9 @@ export default function ProductosPage() {
     setPromoValue(item.promoValue != null ? String(item.promoValue) : '');
     setPromoStartsAt(toDatetimeLocal(item.promoStartsAt));
     setPromoEndsAt(toDatetimeLocal(item.promoEndsAt));
+    setSauceMode(item.sauceMode ?? 'NONE');
+    setAllowSauceSeparate(item.allowSauceSeparate ?? true);
+    setSelectedSauceIds(item.sauces?.map((s) => s.id) ?? []);
     setError('');
     setModalOpen(true);
   };
@@ -184,6 +204,12 @@ export default function ProductosPage() {
               promoStartsAt: null,
               promoEndsAt: null,
             }),
+        sauceMode,
+        allowSauceSeparate: sauceMode === 'NONE' ? true : allowSauceSeparate,
+        sauceIds:
+          sauceMode === 'NONE'
+            ? []
+            : selectedSauceIds,
       };
       if (editing) {
         await updateProduct(editing.id, data);
@@ -445,6 +471,85 @@ export default function ProductosPage() {
                 <p className="text-xs text-text-secondary leading-relaxed">
                   El descuento aplica al precio base del producto. Los extras se
                   cobran al precio normal.
+                </p>
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-3 rounded-xl border border-border bg-background/50 px-4 py-3">
+            <Select
+              label="Salsas de acompañamiento"
+              value={sauceMode}
+              onChange={(e) => {
+                const next = e.target.value as ProductSauceMode;
+                setSauceMode(next);
+                if (next === 'NONE') {
+                  setSelectedSauceIds([]);
+                }
+              }}
+            >
+              {(Object.keys(SAUCE_MODE_LABELS) as ProductSauceMode[]).map(
+                (mode) => (
+                  <option key={mode} value={mode}>
+                    {SAUCE_MODE_LABELS[mode]}
+                  </option>
+                ),
+              )}
+            </Select>
+
+            {sauceMode !== 'NONE' && (
+              <div className="space-y-3 pt-1">
+                <ActiveCheckbox
+                  checked={allowSauceSeparate}
+                  onChange={setAllowSauceSeparate}
+                  label="Permitir salsa aparte"
+                />
+
+                <div>
+                  <p className="mb-2 text-xs font-bold uppercase tracking-wider text-text-secondary">
+                    Salsas disponibles
+                  </p>
+                  {sauceOptions.length === 0 ? (
+                    <p className="text-sm text-text-secondary">
+                      Crea salsas en la sección Salsas del menú.
+                    </p>
+                  ) : (
+                    <div className="max-h-40 space-y-2 overflow-y-auto rounded-xl border border-border bg-background p-3">
+                      {sauceOptions.map((sauce) => {
+                        const checked = selectedSauceIds.includes(sauce.id);
+                        return (
+                          <label
+                            key={sauce.id}
+                            className={`flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 transition ${
+                              checked ? 'bg-primary/10' : 'hover:bg-white/[0.04]'
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={checked}
+                              onChange={() => {
+                                setSelectedSauceIds((prev) =>
+                                  prev.includes(sauce.id)
+                                    ? prev.filter((id) => id !== sauce.id)
+                                    : [...prev, sauce.id],
+                                );
+                              }}
+                              className="size-4 accent-primary"
+                            />
+                            <span className="text-sm font-semibold text-foreground">
+                              {sauce.name}
+                            </span>
+                          </label>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                <p className="text-xs text-text-secondary leading-relaxed">
+                  {sauceMode === 'SINGLE'
+                    ? 'El cliente deberá elegir exactamente una salsa.'
+                    : 'El cliente podrá elegir una o más salsas.'}
                 </p>
               </div>
             )}

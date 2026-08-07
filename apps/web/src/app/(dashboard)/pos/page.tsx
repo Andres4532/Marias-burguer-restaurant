@@ -14,11 +14,17 @@ import { useCart } from '@/hooks/useCart';
 import { getCatalog, getErrorMessage } from '@/lib/catalog';
 import { ProductPrice } from '@/components/catalog/ProductPrice';
 import { createOrder } from '@/lib/orders';
+import { cartItemsToOrderInput } from '@/lib/cart-order';
+import {
+  SaucePickerModal,
+  productNeedsSaucePicker,
+} from '@/components/pos/SaucePickerModal';
 import {
   canAddOneToCart,
   isOutOfStock,
   maxQuantityForCartLine,
 } from '@/lib/inventory';
+import type { CartSauce } from '@/hooks/useCart';
 import type { CatalogCategory } from '@/types/catalog';
 import type { OrderType } from '@/types/orders';
 
@@ -39,6 +45,8 @@ export default function PosPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [cartOpen, setCartOpen] = useState(false);
+  const [saucePickerProduct, setSaucePickerProduct] =
+    useState<CatalogProduct | null>(null);
 
   const loadCatalog = useCallback(async () => {
     setLoading(true);
@@ -84,7 +92,17 @@ export default function PosPage() {
       return;
     }
     setError('');
+    if (productNeedsSaucePicker(product)) {
+      setSaucePickerProduct(product);
+      return;
+    }
     cart.addItem(product, []);
+  };
+
+  const handleSauceConfirm = (sauces: CartSauce[]) => {
+    if (!saucePickerProduct) return;
+    cart.addItem(saucePickerProduct, [], sauces);
+    setSaucePickerProduct(null);
   };
 
   const handleProductClick = (product: CatalogProduct) => {
@@ -159,12 +177,7 @@ export default function PosPage() {
             ? cart.deliveryLongitude
             : undefined,
         notes: cart.orderNotes || undefined,
-        items: cart.items.map((item) => ({
-          productId: item.productId,
-          quantity: item.quantity,
-          extraIds: item.extras.length ? item.extras.map((e) => e.id) : undefined,
-          notes: item.notes,
-        })),
+        items: cartItemsToOrderInput(cart.items),
       });
       cart.clearCart();
       setCartOpen(false);
@@ -338,6 +351,13 @@ export default function PosPage() {
         submitting={submitting}
         onSubmit={handleSubmit}
         getMaxQuantity={getMaxQuantity}
+      />
+
+      <SaucePickerModal
+        open={!!saucePickerProduct}
+        product={saucePickerProduct}
+        onClose={() => setSaucePickerProduct(null)}
+        onConfirm={handleSauceConfirm}
       />
     </div>
   );

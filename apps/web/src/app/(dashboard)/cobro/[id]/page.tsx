@@ -13,6 +13,7 @@ import { TicketPrintHint } from '@/components/kitchen-ticket/TicketPrintHint';
 import { TicketPreviewModal } from '@/components/kitchen-ticket/TicketPreviewModal';
 import { getOrder, payOrder, formatOrderNumber } from '@/lib/orders';
 import { formatPrice, getErrorMessage } from '@/lib/catalog';
+import { formatCartSauceLine } from '@/lib/sauce-labels';
 import {
   ORDER_TYPE_LABELS,
   PAYMENT_METHOD_LABELS,
@@ -251,6 +252,14 @@ export default function CobroPage() {
                     {item.extras.length > 0 && (
                       <p className="text-xs text-text-secondary mt-0.5">
                         {item.extras.map((e) => e.extraName).join(' · ')}
+                      </p>
+                    )}
+                    {item.sauces.length > 0 && (
+                      <p className="text-xs text-text-secondary mt-0.5">
+                        Salsa:{' '}
+                        {item.sauces
+                          .map((s) => formatCartSauceLine(s.sauceName, s.placement))
+                          .join(' · ')}
                       </p>
                     )}
                   </div>

@@ -1,6 +1,7 @@
 import type { Order } from '@/types/orders';
 import { formatOrderNumber, formatTime } from '@/lib/orders';
 import { formatPrice } from '@/lib/catalog';
+import { formatCartSauceLine } from '@/lib/sauce-labels';
 import { ORDER_TYPE_LABELS, PAYMENT_METHOD_LABELS } from '@/types/orders';
 import { getGoogleMapsUrl, hasDeliveryCoordinates } from '@/lib/maps';
 import {
@@ -102,6 +103,15 @@ export function KitchenTicket({ order, copyLabel = 'COCINA' }: KitchenTicketProp
               <ul className="ticket-extras">
                 {item.extras.map((extra) => (
                   <li key={extra.id}>+ {extra.extraName}</li>
+                ))}
+              </ul>
+            )}
+            {item.sauces.length > 0 && (
+              <ul className="ticket-extras">
+                {item.sauces.map((sauce) => (
+                  <li key={sauce.id}>
+                    Salsa: {formatCartSauceLine(sauce.sauceName, sauce.placement)}
+                  </li>
                 ))}
               </ul>
             )}

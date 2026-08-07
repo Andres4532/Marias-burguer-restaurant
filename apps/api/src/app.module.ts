@@ -16,6 +16,7 @@ import { PublicMenuModule } from './public-menu/public-menu.module';
 import { UsersModule } from './users/users.module';
 import { EventsModule } from './events/events.module';
 import { UploadsModule } from './uploads/uploads.module';
+import { SaucesModule } from './sauces/sauces.module';
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { UploadsModule } from './uploads/uploads.module';
     UsersModule,
     EventsModule,
     UploadsModule,
+    SaucesModule,
   ],
   controllers: [AppController],
 })

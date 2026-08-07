@@ -3,11 +3,18 @@
 import { useState, useCallback } from 'react';
 import { getCartBasePrice } from '@/lib/product-pricing';
 import type { Order, OrderType } from '@/types/orders';
+import type { SaucePlacement } from '@/types/catalog';
 
 export interface CartExtra {
   id: string;
   name: string;
   price: number;
+}
+
+export interface CartSauce {
+  id: string;
+  name: string;
+  placement: SaucePlacement;
 }
 
 export interface CartItem {
@@ -17,11 +24,20 @@ export interface CartItem {
   basePrice: number;
   quantity: number;
   extras: CartExtra[];
+  sauces: CartSauce[];
   notes?: string;
 }
 
-function itemKey(productId: string, extraIds: string[]) {
-  return `${productId}:${extraIds.sort().join(',')}`;
+function itemKey(
+  productId: string,
+  extraIds: string[],
+  sauces: CartSauce[],
+) {
+  const saucePart = sauces
+    .map((s) => `${s.id}:${s.placement}`)
+    .sort()
+    .join(',');
+  return `${productId}:${extraIds.sort().join(',')}:${saucePart}`;
 }
 
 function unitPrice(item: CartItem) {
@@ -50,11 +66,13 @@ export function useCart() {
         effectivePrice?: number;
       },
       extras: CartExtra[],
+      sauces: CartSauce[] = [],
       notes?: string,
     ) => {
       const key = itemKey(
         product.id,
         extras.map((e) => e.id),
+        sauces,
       );
 
       setItems((prev) => {
@@ -73,6 +91,7 @@ export function useCart() {
             basePrice: getCartBasePrice(product),
             quantity: 1,
             extras,
+            sauces,
             notes,
           },
         ];
@@ -121,9 +140,14 @@ export function useCart() {
     setItems(
       order.items.map((item) => {
         const extraIds = item.extras.map((extra) => extra.extraId);
+        const sauces = (item.sauces ?? []).map((sauce) => ({
+          id: sauce.sauceId,
+          name: sauce.sauceName,
+          placement: sauce.placement,
+        }));
         const extrasTotal = item.extras.reduce((sum, extra) => sum + extra.price, 0);
         return {
-          key: itemKey(item.productId, extraIds),
+          key: itemKey(item.productId, extraIds, sauces),
           productId: item.productId,
           productName: item.productName,
           basePrice: item.unitPrice - extrasTotal,
@@ -133,6 +157,7 @@ export function useCart() {
             name: extra.extraName,
             price: extra.price,
           })),
+          sauces,
           notes: item.notes ?? undefined,
         };
       }),
