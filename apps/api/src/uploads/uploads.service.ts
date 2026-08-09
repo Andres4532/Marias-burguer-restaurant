@@ -19,7 +19,7 @@ export class UploadsService {
       `http://localhost:${port}`;
     this.publicUrl = raw.replace(/\/+$/, '');
 
-    for (const kind of ['products', 'logos'] as UploadKind[]) {
+    for (const kind of ['products', 'logos', 'qr', 'proofs'] as UploadKind[]) {
       getUploadKindDir(kind);
     }
   }

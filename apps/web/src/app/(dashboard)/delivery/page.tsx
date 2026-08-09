@@ -21,7 +21,10 @@ import {
 } from '@/lib/delivery-workflow';
 import { notifyCustomerByWhatsApp } from '@/lib/customer-notify';
 import { getSettings } from '@/lib/settings';
-import type { Order } from '@/types/orders';
+import {
+  PaymentProofConfirmModal,
+} from '@/components/orders/PaymentProofConfirmModal';
+import { isQrPublicOrder, type Order } from '@/types/orders';
 
 const SECTION_META = [
   {
@@ -54,6 +57,7 @@ export default function DeliveryPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [proofReviewOrder, setProofReviewOrder] = useState<Order | null>(null);
   const [restaurantName, setRestaurantName] = useState('Mi Restaurante');
 
   useEffect(() => {
@@ -96,22 +100,44 @@ export default function DeliveryPage() {
     return () => document.removeEventListener('visibilitychange', refreshOnReturn);
   }, [load]);
 
+  const runConfirm = async (order: Order) => {
+    setBusyId(order.id);
+    setError('');
+    try {
+      await confirmPublicOrder(order.id);
+      notifyCustomerByWhatsApp(
+        'COOKING',
+        order.customerPhone,
+        order.orderNumber,
+        restaurantName,
+      );
+      await copyDeliveryWhatsAppMessage(order);
+      await load(true);
+    } catch (e) {
+      setError(getErrorMessage(e));
+    } finally {
+      setBusyId(null);
+      setProofReviewOrder(null);
+    }
+  };
+
   const handleAction = async (order: Order) => {
     const { action } = getDeliveryWorkflowStep(order);
+
+    if (action === 'confirm') {
+      if (isQrPublicOrder(order) && order.paymentProofUrl) {
+        setProofReviewOrder(order);
+        return;
+      }
+      await runConfirm(order);
+      return;
+    }
+
     setBusyId(order.id);
     setError('');
 
     try {
-      if (action === 'confirm') {
-        await confirmPublicOrder(order.id);
-        notifyCustomerByWhatsApp(
-          'COOKING',
-          order.customerPhone,
-          order.orderNumber,
-          restaurantName,
-        );
-        await copyDeliveryWhatsAppMessage(order);
-      } else if (action === 'charge') {
+      if (action === 'charge') {
         router.push(`/cobro/${order.id}?from=delivery`);
         return;
       } else if (action === 'ready') {
@@ -226,6 +252,17 @@ export default function DeliveryPage() {
             );
           })}
         </div>
+      )}
+
+      {proofReviewOrder?.paymentProofUrl && (
+        <PaymentProofConfirmModal
+          open
+          proofUrl={proofReviewOrder.paymentProofUrl}
+          total={proofReviewOrder.total}
+          confirming={busyId === proofReviewOrder.id}
+          onClose={() => setProofReviewOrder(null)}
+          onConfirm={() => void runConfirm(proofReviewOrder)}
+        />
       )}
     </div>
   );

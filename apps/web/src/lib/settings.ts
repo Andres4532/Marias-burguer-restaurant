@@ -7,6 +7,7 @@ export interface RestaurantSettings {
   slug: string;
   phone: string | null;
   logoUrl: string | null;
+  qrImageUrl: string | null;
   publicMenuEnabled: boolean;
   publicMenuOpenTime: string | null;
   publicMenuCloseTime: string | null;
@@ -18,6 +19,7 @@ export interface UpdateSettingsInput {
   slug?: string;
   phone?: string;
   logoUrl?: string;
+  qrImageUrl?: string;
   publicMenuEnabled?: boolean;
   publicMenuOpenTime?: string;
   publicMenuCloseTime?: string;

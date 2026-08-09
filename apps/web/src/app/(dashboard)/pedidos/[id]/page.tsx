@@ -20,6 +20,7 @@ import {
 } from '@/lib/orders';
 import { formatPrice, getErrorMessage } from '@/lib/catalog';
 import { formatCartSauceLine } from '@/lib/sauce-labels';
+import { normalizeMediaUrl } from '@/lib/media-url';
 import {
   ORDER_TYPE_LABELS,
   ORDER_STATUS_LABELS,
@@ -28,6 +29,7 @@ import {
   canEditOrder,
   canCancelOrder,
   canChargeOrder,
+  isQrPublicOrder,
   type Order,
   type OrderStatus,
 } from '@/types/orders';
@@ -198,6 +200,27 @@ export default function PedidoDetallePage() {
                   </div>
                 </Card>
               )}
+
+            {isQrPublicOrder(order) && order.paymentProofUrl && (
+              <Card padding="sm" className="mb-5 bg-blue-950/20 border-blue-800/40">
+                <p className="font-extrabold text-blue-100 mb-3 text-sm">
+                  Comprobante de pago QR
+                </p>
+                <a
+                  href={normalizeMediaUrl(order.paymentProofUrl) ?? order.paymentProofUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="block rounded-xl overflow-hidden border border-border bg-background"
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={normalizeMediaUrl(order.paymentProofUrl) ?? order.paymentProofUrl}
+                    alt="Comprobante QR"
+                    className="w-full max-h-80 object-contain bg-black/10"
+                  />
+                </a>
+              </Card>
+            )}
 
             {order.type === 'DELIVERY' && (
               <Card

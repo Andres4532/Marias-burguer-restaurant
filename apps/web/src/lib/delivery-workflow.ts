@@ -1,4 +1,5 @@
 import type { Order } from '@/types/orders';
+import { isQrPublicOrder } from '@/types/orders';
 
 export type DeliveryWorkflowAction =
   | 'confirm'
@@ -30,13 +31,18 @@ export function getDeliveryWorkflowStep(order: Order): DeliveryWorkflowStep {
   }
 
   if (order.status === 'PENDIENTE_CONFIRMACION') {
+    const qrPending = isQrPublicOrder(order);
     return {
       step: 1,
       totalSteps: 4,
-      phaseLabel: 'Nuevo',
+      phaseLabel: qrPending ? 'Pago QR' : 'Nuevo',
       action: 'confirm',
-      actionLabel: 'Confirmar y pedir Speed',
-      hint: 'Envía a cocina, avisa al cliente y copia el pedido para Speed',
+      actionLabel: qrPending
+        ? 'Ver comprobante QR'
+        : 'Confirmar y pedir Speed',
+      hint: qrPending
+        ? 'Revisa el comprobante antes de enviar a cocina'
+        : 'Envía a cocina, avisa al cliente y copia el pedido para Speed',
     };
   }
 

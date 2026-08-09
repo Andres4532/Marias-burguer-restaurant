@@ -40,6 +40,12 @@ export class UpdateSettingsDto {
   logoUrl?: string | null;
 
   @IsOptional()
+  @ValidateIf((_, value) => value != null && value !== '')
+  @IsUrl(HTTP_URL_VALIDATION_OPTIONS, { message: 'URL del QR inválida' })
+  @MaxLength(500)
+  qrImageUrl?: string | null;
+
+  @IsOptional()
   @IsBoolean()
   publicMenuEnabled?: boolean;
 

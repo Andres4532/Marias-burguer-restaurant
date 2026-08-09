@@ -11,6 +11,7 @@ import {
   OrderSource,
   Prisma,
   PaymentStatus,
+  PaymentMethod,
   UserRole,
   ProductSauceMode,
   SaucePlacement,
@@ -156,6 +157,8 @@ export class OrdersService {
     deliveryReference: string | null;
     deliveryLatitude: { toString(): string } | null;
     deliveryLongitude: { toString(): string } | null;
+    customerPaymentMethod: PaymentMethod | null;
+    paymentProofUrl: string | null;
     subtotal: { toString(): string };
     total: { toString(): string };
     notes: string | null;
@@ -217,6 +220,8 @@ export class OrdersService {
         order.deliveryLongitude != null
           ? toNumber(order.deliveryLongitude)
           : null,
+      customerPaymentMethod: order.customerPaymentMethod ?? null,
+      paymentProofUrl: order.paymentProofUrl ?? null,
       subtotal: toNumber(order.subtotal),
       total: toNumber(order.total),
       notes: order.notes,
@@ -312,6 +317,33 @@ export class OrdersService {
       });
     }
 
+    const paymentMethod = dto.paymentMethod ?? PaymentMethod.EFECTIVO;
+    if (
+      paymentMethod !== PaymentMethod.EFECTIVO &&
+      paymentMethod !== PaymentMethod.QR
+    ) {
+      throw new BadRequestException('Método de pago no válido para menú público');
+    }
+
+    if (paymentMethod === PaymentMethod.QR) {
+      if (!dto.paymentProofUrl?.trim()) {
+        throw new BadRequestException('Sube el comprobante de pago QR');
+      }
+      const settings = await this.prisma.restaurantSettings.findUnique({
+        where: { id: 'default' },
+        select: { qrImageUrl: true },
+      });
+      if (!settings?.qrImageUrl) {
+        throw new BadRequestException(
+          'El pago por QR no está disponible en este momento',
+        );
+      }
+    } else if (dto.paymentProofUrl?.trim()) {
+      throw new BadRequestException(
+        'El comprobante solo aplica para pago por QR',
+      );
+    }
+
     const order = await this.createInternal({
       type,
       source: OrderSource.MENU_PUBLICO,
@@ -327,6 +359,11 @@ export class OrdersService {
         type === OrderType.DELIVERY ? dto.deliveryLongitude : undefined,
       notes: dto.notes,
       items: dto.items,
+      customerPaymentMethod: paymentMethod,
+      paymentProofUrl:
+        paymentMethod === PaymentMethod.QR
+          ? dto.paymentProofUrl!.trim()
+          : null,
       initialStatus: OrderStatus.PENDIENTE_CONFIRMACION,
       publicTrackingToken: randomUUID().replace(/-/g, ''),
     });
@@ -336,7 +373,7 @@ export class OrdersService {
     return mapped;
   }
 
-  async confirmPublicOrder(id: string) {
+  async confirmPublicOrder(id: string, userId: string) {
     const order = await this.prisma.order.findUnique({
       where: { id },
       include: this.orderInclude,
@@ -356,6 +393,43 @@ export class OrdersService {
       throw new BadRequestException(
         'Este pedido ya fue confirmado o no está pendiente de confirmación',
       );
+    }
+
+    if (order.customerPaymentMethod === PaymentMethod.QR) {
+      if (!order.paymentProofUrl) {
+        throw new BadRequestException(
+          'Falta el comprobante de pago QR para confirmar',
+        );
+      }
+
+      if (order.payments.length > 0) {
+        throw new BadRequestException('Este pedido ya fue cobrado');
+      }
+
+      const now = new Date();
+      const updated = await this.prisma.$transaction(async (tx) => {
+        await tx.payment.create({
+          data: {
+            orderId: id,
+            method: PaymentMethod.QR,
+            amount: order.total,
+            status: PaymentStatus.PAGADO,
+            paidAt: now,
+            createdById: userId,
+          },
+        });
+
+        return tx.order.update({
+          where: { id },
+          data: {
+            status: OrderStatus.EN_COCINA,
+            paidAt: now,
+          },
+          include: this.orderInclude,
+        });
+      });
+
+      return this.mapOrder(updated);
     }
 
     const updated = await this.prisma.order.update({
@@ -602,6 +676,8 @@ export class OrdersService {
     notes?: string;
     items: CreateOrderDto['items'];
     createdById?: string;
+    customerPaymentMethod?: PaymentMethod | null;
+    paymentProofUrl?: string | null;
     initialStatus?: OrderStatus;
     publicTrackingToken?: string;
   }) {
@@ -661,6 +737,8 @@ export class OrdersService {
             data.deliveryLatitude != null ? data.deliveryLatitude : null,
           deliveryLongitude:
             data.deliveryLongitude != null ? data.deliveryLongitude : null,
+          customerPaymentMethod: data.customerPaymentMethod ?? null,
+          paymentProofUrl: data.paymentProofUrl ?? null,
           subtotal,
           total: subtotal,
           notes: data.notes,

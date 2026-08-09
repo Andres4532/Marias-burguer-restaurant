@@ -11,7 +11,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { UserRole } from '@prisma/client';
 import { Roles } from '../common/decorators/roles.decorator';
 import { RolesGuard } from '../common/guards/roles.guard';
-import { createImageUploadOptions } from './uploads.config';
+import { createImageUploadOptions, type UploadKind } from './uploads.config';
 import { CloudinaryService } from './cloudinary.service';
 import { UploadsService } from './uploads.service';
 
@@ -38,8 +38,14 @@ export class UploadsController {
     return this.buildResponse('logos', file);
   }
 
+  @Post('qr')
+  @UseInterceptors(FileInterceptor('file', createImageUploadOptions('qr')))
+  async uploadQr(@UploadedFile() file?: Express.Multer.File) {
+    return this.buildResponse('qr', file);
+  }
+
   private async buildResponse(
-    kind: 'products' | 'logos',
+    kind: UploadKind,
     file?: Express.Multer.File,
   ) {
     if (!file) {

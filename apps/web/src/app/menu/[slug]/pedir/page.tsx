@@ -16,7 +16,9 @@ import {
   getPublicMenu,
   createPublicOrder,
   getPublicMenuErrorMessage,
+  uploadPublicPaymentProof,
 } from '@/lib/public-menu';
+import { normalizeMediaUrl } from '@/lib/media-url';
 import { DeliveryFormFields } from '@/components/orders/DeliveryFormFields';
 import { isDeliveryLocationComplete } from '@/lib/maps';
 import { ProductImage } from '@/components/ui/ProductImage';
@@ -35,7 +37,7 @@ import {
 } from '@/components/pos/SaucePickerModal';
 import type { CartSauce } from '@/hooks/useCart';
 import type { CatalogCategory } from '@/types/catalog';
-import { ORDER_TYPE_LABELS } from '@/types/orders';
+import { ORDER_TYPE_LABELS, PAYMENT_METHOD_LABELS, type PaymentMethod } from '@/types/orders';
 
 type CatalogProduct = CatalogCategory['products'][number];
 
@@ -58,6 +60,7 @@ export default function PublicMenuOrderPage() {
   const cart = useCart();
   const [restaurantName, setRestaurantName] = useState('');
   const [restaurantLogo, setRestaurantLogo] = useState<string | null>(null);
+  const [qrImageUrl, setQrImageUrl] = useState<string | null>(null);
   const [catalog, setCatalog] = useState<CatalogCategory[]>([]);
   const [activeCategory, setActiveCategory] = useState('');
   const [loading, setLoading] = useState(true);
@@ -71,6 +74,8 @@ export default function PublicMenuOrderPage() {
   const [deliveryLatitude, setDeliveryLatitude] = useState<number | null>(null);
   const [deliveryLongitude, setDeliveryLongitude] = useState<number | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('EFECTIVO');
+  const [proofFile, setProofFile] = useState<File | null>(null);
   const [saucePickerProduct, setSaucePickerProduct] =
     useState<CatalogProduct | null>(null);
 
@@ -87,6 +92,7 @@ export default function PublicMenuOrderPage() {
       const data = await getPublicMenu(slug);
       setRestaurantName(data.restaurant.name);
       setRestaurantLogo(data.restaurant.logoUrl);
+      setQrImageUrl(data.restaurant.qrImageUrl);
       setCatalog(data.categories);
       if (data.categories.length > 0) {
         setActiveCategory(data.categories[0].id);
@@ -185,6 +191,8 @@ export default function PublicMenuOrderPage() {
       setCartOpen(true);
       return;
     }
+    setPaymentMethod('EFECTIVO');
+    setProofFile(null);
     setCartOpen(false);
     setConfirmOpen(true);
   };
@@ -195,8 +203,25 @@ export default function PublicMenuOrderPage() {
       return;
     }
 
+    if (paymentMethod === 'QR') {
+      if (!qrImageUrl) {
+        setError('El pago por QR no está disponible. Elige efectivo.');
+        return;
+      }
+      if (!proofFile) {
+        setError('Sube la captura del comprobante de pago');
+        return;
+      }
+    }
+
     setSubmitting(true);
+    setError('');
     try {
+      let paymentProofUrl: string | undefined;
+      if (paymentMethod === 'QR' && proofFile) {
+        paymentProofUrl = await uploadPublicPaymentProof(slug, proofFile);
+      }
+
       const order = await createPublicOrder(slug, {
         type: orderType,
         customerName: customerName.trim(),
@@ -216,6 +241,8 @@ export default function PublicMenuOrderPage() {
             ? deliveryLongitude
             : undefined,
         notes: cart.orderNotes || undefined,
+        paymentMethod,
+        paymentProofUrl,
         items: cartItemsToOrderInput(cart.items),
       });
       cart.clearCart();
@@ -507,6 +534,71 @@ export default function PublicMenuOrderPage() {
             <span>Total</span>
             <span className="text-primary">{formatPrice(cart.subtotal)}</span>
           </p>
+          <p className="flex justify-between items-center pt-1 text-base font-extrabold text-foreground">
+            <span>Total</span>
+            <span className="text-primary">{formatPrice(cart.subtotal)}</span>
+          </p>
+
+          <div className="space-y-3 pt-2 border-t border-border">
+            <p className="text-sm font-bold text-foreground">Forma de pago</p>
+            <div className="flex gap-2 flex-wrap">
+              <FilterChip
+                active={paymentMethod === 'EFECTIVO'}
+                onClick={() => {
+                  setPaymentMethod('EFECTIVO');
+                  setProofFile(null);
+                  setError('');
+                }}
+              >
+                💵 {PAYMENT_METHOD_LABELS.EFECTIVO} al recibir
+              </FilterChip>
+              {qrImageUrl && (
+                <FilterChip
+                  active={paymentMethod === 'QR'}
+                  onClick={() => {
+                    setPaymentMethod('QR');
+                    setError('');
+                  }}
+                >
+                  📱 {PAYMENT_METHOD_LABELS.QR}
+                </FilterChip>
+              )}
+            </div>
+
+            {paymentMethod === 'QR' && qrImageUrl && (
+              <div className="space-y-3 rounded-xl border border-border bg-background/50 p-3">
+                <p className="text-sm text-text-secondary">
+                  Escanea el QR, paga el total y sube el comprobante.
+                </p>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={normalizeMediaUrl(qrImageUrl) ?? qrImageUrl}
+                  alt="Código QR de pago"
+                  className="mx-auto max-h-56 w-auto rounded-lg object-contain bg-white p-2"
+                />
+                <label className="block">
+                  <span className="mb-1.5 block text-sm font-semibold text-foreground">
+                    Comprobante de pago
+                  </span>
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    className="block w-full text-sm text-text-secondary file:mr-3 file:rounded-lg file:border-0 file:bg-primary/10 file:px-3 file:py-2 file:text-sm file:font-bold file:text-primary"
+                    onChange={(e) => {
+                      setProofFile(e.target.files?.[0] ?? null);
+                      setError('');
+                    }}
+                  />
+                </label>
+                {proofFile && (
+                  <p className="text-xs text-text-secondary">
+                    Archivo: {proofFile.name}
+                  </p>
+                )}
+              </div>
+            )}
+          </div>
+
           {error && <FormError message={error} />}
           <div className="flex flex-col-reverse sm:flex-row gap-2 pt-2">
             <Button

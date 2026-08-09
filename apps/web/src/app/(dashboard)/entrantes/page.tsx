@@ -14,9 +14,14 @@ import {
 } from '@/lib/customer-notify';
 import { getSettings } from '@/lib/settings';
 import {
+  PaymentProofConfirmModal,
+} from '@/components/orders/PaymentProofConfirmModal';
+import {
   ORDER_TYPE_LABELS,
+  PAYMENT_METHOD_LABELS,
   getOrderSummary,
   canChargeOrder,
+  isQrPublicOrder,
   type Order,
 } from '@/types/orders';
 
@@ -27,6 +32,7 @@ export default function EntrantesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
+  const [proofReviewOrder, setProofReviewOrder] = useState<Order | null>(null);
   const [restaurantName, setRestaurantName] = useState('Mi Restaurante');
 
   useEffect(() => {
@@ -77,7 +83,7 @@ export default function EntrantesPage() {
     return () => document.removeEventListener('visibilitychange', refreshOnReturn);
   }, [load]);
 
-  const handleConfirm = async (order: Order) => {
+  const runConfirm = async (order: Order) => {
     setConfirmingId(order.id);
     setError('');
     try {
@@ -93,7 +99,16 @@ export default function EntrantesPage() {
       setError(getErrorMessage(e));
     } finally {
       setConfirmingId(null);
+      setProofReviewOrder(null);
     }
+  };
+
+  const handleConfirm = (order: Order) => {
+    if (isQrPublicOrder(order) && order.paymentProofUrl) {
+      setProofReviewOrder(order);
+      return;
+    }
+    void runConfirm(order);
   };
 
   return (
@@ -179,6 +194,11 @@ export default function EntrantesPage() {
                     <span className="text-xs font-bold bg-purple-100 text-purple-700 px-2.5 py-1 rounded-full">
                       Menú público
                     </span>
+                    {isQrPublicOrder(order) && (
+                      <span className="text-xs font-bold bg-blue-100 text-blue-800 px-2.5 py-1 rounded-full">
+                        {PAYMENT_METHOD_LABELS.QR}
+                      </span>
+                    )}
                   </div>
                   <p className="text-sm text-foreground mt-1 font-semibold">
                     {getOrderSummary(order)}
@@ -204,11 +224,13 @@ export default function EntrantesPage() {
                         variant="success"
                         size="md"
                         disabled={confirmingId === order.id}
-                        onClick={() => void handleConfirm(order)}
+                        onClick={() => handleConfirm(order)}
                       >
                         {confirmingId === order.id
                           ? 'Confirmando…'
-                          : 'Confirmar → cocina'}
+                          : isQrPublicOrder(order)
+                            ? 'Ver comprobante QR'
+                            : 'Confirmar → cocina'}
                       </Button>
                     ) : (
                       <Button variant="secondary" size="md" disabled>
@@ -224,6 +246,10 @@ export default function EntrantesPage() {
                       <Link href={`/cobro/${order.id}`} className="inline-flex">
                         <Button size="md">Cobrar →</Button>
                       </Link>
+                    ) : order.payment ? (
+                      <Button size="md" disabled>
+                        Pagado
+                      </Button>
                     ) : (
                       <Button
                         size="md"
@@ -241,6 +267,17 @@ export default function EntrantesPage() {
           </div>
         )}
       </Card>
+
+      {proofReviewOrder?.paymentProofUrl && (
+        <PaymentProofConfirmModal
+          open
+          proofUrl={proofReviewOrder.paymentProofUrl}
+          total={proofReviewOrder.total}
+          confirming={confirmingId === proofReviewOrder.id}
+          onClose={() => setProofReviewOrder(null)}
+          onConfirm={() => void runConfirm(proofReviewOrder)}
+        />
+      )}
     </div>
   );
 }

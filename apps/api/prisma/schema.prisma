@@ -178,6 +178,9 @@ model Order {
   deliveryLatitude    Decimal? @db.Decimal(10, 7)
   deliveryLongitude   Decimal? @db.Decimal(10, 7)
 
+  customerPaymentMethod PaymentMethod?
+  paymentProofUrl       String?
+
   subtotal Decimal @db.Decimal(10, 2)
   total    Decimal @db.Decimal(10, 2)
   notes    String?
@@ -203,6 +206,7 @@ model RestaurantSettings {
   slug                String   @unique @default("mi-restaurante")
   phone               String?
   logoUrl             String?
+  qrImageUrl          String?
   publicMenuEnabled   Boolean  @default(true)
   publicMenuOpenTime  String?  @default("08:00")
   publicMenuCloseTime String?  @default("22:00")

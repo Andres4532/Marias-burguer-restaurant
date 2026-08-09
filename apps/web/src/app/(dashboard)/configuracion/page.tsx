@@ -14,7 +14,8 @@ import {
   formatMenuSchedule,
 } from '@/lib/settings';
 import { getErrorMessage } from '@/lib/catalog';
-import { uploadLogo } from '@/lib/uploads';
+import { uploadLogo, uploadQrImage } from '@/lib/uploads';
+import { normalizeMediaUrl } from '@/lib/media-url';
 import { RestaurantLogo } from '@/components/layout/RestaurantLogo';
 import { ImageUploadField } from '@/components/ui/ImageUploadField';
 
@@ -24,6 +25,7 @@ export default function ConfiguracionPage() {
   const [slug, setSlug] = useState('');
   const [phone, setPhone] = useState('');
   const [logoUrl, setLogoUrl] = useState('');
+  const [qrImageUrl, setQrImageUrl] = useState('');
   const [publicMenuEnabled, setPublicMenuEnabled] = useState(true);
   const [openTime, setOpenTime] = useState('08:00');
   const [closeTime, setCloseTime] = useState('22:00');
@@ -41,6 +43,7 @@ export default function ConfiguracionPage() {
       setSlug(data.slug);
       setPhone(data.phone ?? '');
       setLogoUrl(data.logoUrl ?? '');
+      setQrImageUrl(data.qrImageUrl ?? '');
       setPublicMenuEnabled(data.publicMenuEnabled);
       setOpenTime(data.publicMenuOpenTime ?? '08:00');
       setCloseTime(data.publicMenuCloseTime ?? '22:00');
@@ -65,6 +68,7 @@ export default function ConfiguracionPage() {
         slug: slug.trim().toLowerCase(),
         phone: phone.trim() || undefined,
         logoUrl: logoUrl.trim() || undefined,
+        qrImageUrl: qrImageUrl.trim() || undefined,
         publicMenuEnabled,
         publicMenuOpenTime: openTime,
         publicMenuCloseTime: closeTime,
@@ -73,6 +77,7 @@ export default function ConfiguracionPage() {
       setSlug(updated.slug);
       setPhone(updated.phone ?? '');
       setLogoUrl(updated.logoUrl ?? '');
+      setQrImageUrl(updated.qrImageUrl ?? '');
       setPublicMenuEnabled(updated.publicMenuEnabled);
       setOpenTime(updated.publicMenuOpenTime ?? '08:00');
       setCloseTime(updated.publicMenuCloseTime ?? '22:00');
@@ -194,6 +199,26 @@ export default function ConfiguracionPage() {
               Horario actual: {formatMenuSchedule(openTime, closeTime)} (hora del
               restaurante)
             </p>
+
+            <ImageUploadField
+              label="QR para pagos del menú"
+              value={qrImageUrl}
+              onChange={setQrImageUrl}
+              onUpload={uploadQrImage}
+              hint="Los clientes verán esta imagen si eligen pagar por QR."
+              preview={
+                qrImageUrl ? (
+                  <div className="rounded-xl border border-border bg-background p-3">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={normalizeMediaUrl(qrImageUrl) ?? qrImageUrl}
+                      alt="QR de pago"
+                      className="mx-auto max-h-48 w-auto object-contain"
+                    />
+                  </div>
+                ) : undefined
+              }
+            />
 
             <div className="rounded-xl p-4 bg-background border border-border">
               <p className="text-xs font-bold uppercase tracking-wider text-text-secondary mb-2">

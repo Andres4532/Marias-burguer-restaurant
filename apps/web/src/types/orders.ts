@@ -70,9 +70,20 @@ export interface Order {
   updatedAt: string;
   paidAt: string | null;
   publicTrackingToken?: string | null;
+  customerPaymentMethod?: PaymentMethod | null;
+  paymentProofUrl?: string | null;
   payment: Payment | null;
   createdBy?: { id: string; name: string } | null;
   items: OrderItem[];
+}
+
+export function isQrPublicOrder(order: {
+  source?: OrderSource;
+  customerPaymentMethod?: PaymentMethod | null;
+}): boolean {
+  return (
+    order.source === 'MENU_PUBLICO' && order.customerPaymentMethod === 'QR'
+  );
 }
 
 export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {

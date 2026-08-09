@@ -70,7 +70,10 @@ export class OrdersController {
   }
 
   @Post(':id/confirm')
-  confirmPublicOrder(@Param('id') id: string) {
-    return this.ordersService.confirmPublicOrder(id);
+  confirmPublicOrder(
+    @Param('id') id: string,
+    @CurrentUser() user: JwtPayloadUser,
+  ) {
+    return this.ordersService.confirmPublicOrder(id, user.id);
   }
 }

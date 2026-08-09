@@ -39,6 +39,8 @@ export const uploadProductImage = (file: File) =>
 
 export const uploadLogo = (file: File) => uploadImage(file, '/uploads/logo');
 
+export const uploadQrImage = (file: File) => uploadImage(file, '/uploads/qr');
+
 export function getUploadErrorMessage(error: unknown): string {
   return parseApiError(error);
 }

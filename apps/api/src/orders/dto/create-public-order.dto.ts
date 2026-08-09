@@ -10,10 +10,12 @@ import {
   IsNumber,
   Min,
   Max,
+  IsUrl,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { OrderType } from '@prisma/client';
+import { OrderType, PaymentMethod } from '@prisma/client';
 import { CreateOrderItemDto } from './create-order.dto';
+import { HTTP_URL_VALIDATION_OPTIONS } from '../../common/validation/url-options';
 
 export class CreatePublicOrderDto {
   @IsOptional()
@@ -58,6 +60,16 @@ export class CreatePublicOrderDto {
   @IsOptional()
   @IsString()
   notes?: string;
+
+  @IsOptional()
+  @IsEnum(PaymentMethod)
+  paymentMethod?: PaymentMethod;
+
+  @ValidateIf((o) => o.paymentMethod === PaymentMethod.QR)
+  @IsString()
+  @IsNotEmpty()
+  @IsUrl(HTTP_URL_VALIDATION_OPTIONS, { message: 'URL del comprobante inválida' })
+  paymentProofUrl?: string;
 
   @IsArray()
   @ValidateNested({ each: true })

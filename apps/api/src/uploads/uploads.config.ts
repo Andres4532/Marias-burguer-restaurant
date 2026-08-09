@@ -9,7 +9,7 @@ import {
   MIME_TO_EXT,
 } from './uploads.constants';
 
-export type UploadKind = 'products' | 'logos';
+export type UploadKind = 'products' | 'logos' | 'qr' | 'proofs';
 
 export function isCloudinaryUploadEnabled(): boolean {
   return Boolean(

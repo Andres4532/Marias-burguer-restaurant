@@ -24,6 +24,7 @@ export class SettingsService {
     slug: string;
     phone: string | null;
     logoUrl: string | null;
+    qrImageUrl: string | null;
     publicMenuEnabled: boolean;
     publicMenuOpenTime: string | null;
     publicMenuCloseTime: string | null;
@@ -35,6 +36,7 @@ export class SettingsService {
       slug: settings.slug,
       phone: settings.phone,
       logoUrl: settings.logoUrl,
+      qrImageUrl: settings.qrImageUrl,
       publicMenuEnabled: settings.publicMenuEnabled,
       publicMenuOpenTime: settings.publicMenuOpenTime,
       publicMenuCloseTime: settings.publicMenuCloseTime,
@@ -133,6 +135,7 @@ export class SettingsService {
         slug: dto.slug,
         phone: dto.phone,
         logoUrl: dto.logoUrl === '' ? null : dto.logoUrl,
+        qrImageUrl: dto.qrImageUrl === '' ? null : dto.qrImageUrl,
         publicMenuEnabled: dto.publicMenuEnabled,
         publicMenuOpenTime: dto.publicMenuOpenTime,
         publicMenuCloseTime: dto.publicMenuCloseTime,
