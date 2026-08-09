@@ -131,7 +131,7 @@ export default function PublicMenuOrderPage() {
       return;
     }
     setError('');
-    if (productNeedsSaucePicker(product)) {
+    if (orderType && productNeedsSaucePicker(product, orderType)) {
       setSaucePickerProduct(product);
       return;
     }

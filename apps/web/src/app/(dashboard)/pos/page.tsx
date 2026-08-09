@@ -92,7 +92,7 @@ export default function PosPage() {
       return;
     }
     setError('');
-    if (productNeedsSaucePicker(product)) {
+    if (productNeedsSaucePicker(product, cart.orderType)) {
       setSaucePickerProduct(product);
       return;
     }

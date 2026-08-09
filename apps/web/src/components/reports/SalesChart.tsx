@@ -22,12 +22,7 @@ export function SalesChart({ series, granularity = 'day' }: SalesChartProps) {
 
   const formatLabel = (date: string) => {
     if (granularity === 'month') {
-      const month = Number(date.slice(5, 7));
-      return (
-        new Date(2000, month - 1, 1).toLocaleDateString('es-BO', {
-          month: 'short',
-        }).slice(0, 3)
-      );
+      return formatReportMonth(date).split(' ')[0]?.slice(0, 3) ?? date.slice(5, 7);
     }
     return `${date.slice(8)}/${date.slice(5, 7)}`;
   };

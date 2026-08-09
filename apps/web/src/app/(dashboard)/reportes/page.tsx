@@ -353,13 +353,6 @@ export default function ReportesPage() {
             </Card>
           </div>
 
-          <Card padding="sm" className="bg-background border-dashed text-sm text-text-secondary">
-            Las ventas se calculan por fecha de cobro en zona horaria{' '}
-            <strong className="text-foreground">{report.timezone}</strong>.
-            {report.granularity === 'month'
-              ? ' El reporte anual muestra ventas agrupadas por mes.'
-              : ' Rango personalizado máximo: 93 días.'}
-          </Card>
         </div>
       ) : null}
     </div>

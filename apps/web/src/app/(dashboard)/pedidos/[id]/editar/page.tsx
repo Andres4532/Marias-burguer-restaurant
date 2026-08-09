@@ -134,7 +134,7 @@ export default function EditarPedidoPage() {
       return;
     }
     setError('');
-    if (productNeedsSaucePicker(product)) {
+    if (productNeedsSaucePicker(product, 'MESA')) {
       setSaucePickerProduct(adjusted);
       return;
     }

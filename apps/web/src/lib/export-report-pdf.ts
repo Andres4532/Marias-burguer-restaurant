@@ -1,6 +1,7 @@
 import type { SalesReport } from './reports';
 import {
   formatReportDate,
+  formatReportDateTime,
   formatReportMonth,
   formatReportPeriod,
 } from './reports';
@@ -61,10 +62,9 @@ export async function downloadReportPdf(
   y = writeLine(doc, `Periodo: ${formatReportPeriod(report.from, report.to, report.year)}`, y, {
     bold: true,
   });
-  y = writeLine(doc, `Zona horaria: ${report.timezone}`, y);
   y = writeLine(
     doc,
-    `Generado: ${new Date().toLocaleString('es-BO')}`,
+    `Generado: ${formatReportDateTime()}`,
     y,
     { color: [120, 120, 120] },
   );

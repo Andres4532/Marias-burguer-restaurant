@@ -151,8 +151,12 @@ export function SaucePickerModal({
   );
 }
 
+import type { OrderType } from '@/types/orders';
+
 export function productNeedsSaucePicker(
   product: { sauceMode?: string },
+  orderType: OrderType,
 ): boolean {
+  if (orderType === 'MESA') return false;
   return product.sauceMode === 'SINGLE' || product.sauceMode === 'MULTIPLE';
 }

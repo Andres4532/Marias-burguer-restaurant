@@ -419,7 +419,10 @@ export class OrdersService {
     }
   }
 
-  private async buildItemsData(items: CreateOrderDto['items']) {
+  private async buildItemsData(
+    items: CreateOrderDto['items'],
+    orderType: OrderType,
+  ) {
     if (!items.length) {
       throw new BadRequestException('El pedido debe tener al menos un producto');
     }
@@ -492,33 +495,39 @@ export class OrdersService {
           .map((entry) => entry.sauce.id),
       );
 
+      const saucesRequired = orderType !== OrderType.MESA;
+
       if (product.sauceMode === ProductSauceMode.NONE) {
         if (requestedSauces.length > 0) {
           throw new BadRequestException(
             `El producto ${product.name} no permite salsas`,
           );
         }
-      } else if (!requestedSauces.length) {
+      } else if (saucesRequired && !requestedSauces.length) {
         throw new BadRequestException(
           `Selecciona al menos una salsa para ${product.name}`,
         );
-      } else if (
-        product.sauceMode === ProductSauceMode.SINGLE &&
-        requestedSauces.length !== 1
-      ) {
-        throw new BadRequestException(
-          `Selecciona solo una salsa para ${product.name}`,
-        );
-      } else if (product.sauceMode === ProductSauceMode.MULTIPLE) {
-        const uniqueSauceIds = new Set(requestedSauces.map((s) => s.sauceId));
-        if (uniqueSauceIds.size !== requestedSauces.length) {
+      } else if (requestedSauces.length > 0) {
+        if (
+          product.sauceMode === ProductSauceMode.SINGLE &&
+          requestedSauces.length !== 1
+        ) {
           throw new BadRequestException(
-            `No repitas la misma salsa en ${product.name}`,
+            `Selecciona solo una salsa para ${product.name}`,
           );
+        } else if (product.sauceMode === ProductSauceMode.MULTIPLE) {
+          const uniqueSauceIds = new Set(requestedSauces.map((s) => s.sauceId));
+          if (uniqueSauceIds.size !== requestedSauces.length) {
+            throw new BadRequestException(
+              `No repitas la misma salsa en ${product.name}`,
+            );
+          }
         }
       }
 
-      const selectedSauces = requestedSauces.map((selection) => {
+      const selectedSauces =
+        requestedSauces.length > 0
+          ? requestedSauces.map((selection) => {
         if (!allowedSauceIds.has(selection.sauceId)) {
           throw new BadRequestException(
             `La salsa seleccionada no está disponible para ${product.name}`,
@@ -547,7 +556,8 @@ export class OrdersService {
           sauceName: sauce.name,
           placement,
         };
-      });
+            })
+          : [];
 
       const selectedExtras = extraIds.map((extraId) => {
         const extra = extraMap.get(extraId)!;
@@ -595,7 +605,10 @@ export class OrdersService {
     initialStatus?: OrderStatus;
     publicTrackingToken?: string;
   }) {
-    const { subtotal, itemsData } = await this.buildItemsData(data.items);
+    const { subtotal, itemsData } = await this.buildItemsData(
+      data.items,
+      data.type,
+    );
 
     const order = await this.prisma.$transaction(async (tx) => {
       const stockByProduct = new Map<string, number>();
@@ -821,7 +834,10 @@ export class OrdersService {
       throw new BadRequestException('El nombre es requerido');
     }
 
-    const { subtotal, itemsData } = await this.buildItemsData(dto.items);
+    const { subtotal, itemsData } = await this.buildItemsData(
+      dto.items,
+      OrderType.MESA,
+    );
 
     const updated = await this.prisma.$transaction(async (tx) => {
       const oldQty = new Map<string, number>();

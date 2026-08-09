@@ -41,17 +41,46 @@ export type DailyReport = SalesReport;
 
 const TZ = 'America/La_Paz';
 
+function dateFromYmd(dateStr: string): Date {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  return new Date(Date.UTC(y, m - 1, d, 12, 0, 0));
+}
+
+function formatYmdUtc(date: Date): string {
+  const y = date.getUTCFullYear();
+  const m = String(date.getUTCMonth() + 1).padStart(2, '0');
+  const d = String(date.getUTCDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
+function getWeekdayInTz(date: Date): number {
+  const weekday = date.toLocaleDateString('en-US', {
+    timeZone: TZ,
+    weekday: 'short',
+  });
+  const map: Record<string, number> = {
+    Sun: 0,
+    Mon: 1,
+    Tue: 2,
+    Wed: 3,
+    Thu: 4,
+    Fri: 5,
+    Sat: 6,
+  };
+  return map[weekday] ?? 0;
+}
+
 export function getTodayInTz(timezone = TZ): string {
   return new Date().toLocaleDateString('en-CA', { timeZone: timezone });
 }
 
 export function getWeekStart(dateStr: string): string {
   const [y, m, d] = dateStr.split('-').map(Number);
-  const date = new Date(y, m - 1, d);
-  const day = date.getDay();
+  const anchor = new Date(Date.UTC(y, m - 1, d, 12, 0, 0));
+  const day = getWeekdayInTz(anchor);
   const diff = day === 0 ? 6 : day - 1;
-  date.setDate(date.getDate() - diff);
-  return formatYmd(date);
+  const start = new Date(Date.UTC(y, m - 1, d - diff, 12, 0, 0));
+  return formatYmdUtc(start);
 }
 
 export function getMonthStart(dateStr: string): string {
@@ -64,10 +93,10 @@ export function getCurrentYear(dateStr = getTodayInTz()): number {
 }
 
 export function formatReportMonth(monthStr: string): string {
-  const [year, month] = monthStr.split('-');
-  const label = new Date(Number(year), Number(month) - 1, 1).toLocaleDateString(
+  const [year, month] = monthStr.split('-').map(Number);
+  const label = new Date(Date.UTC(year, month - 1, 1, 12, 0, 0)).toLocaleDateString(
     'es-BO',
-    { month: 'short', year: 'numeric' },
+    { timeZone: TZ, month: 'short', year: 'numeric' },
   );
   return label.charAt(0).toUpperCase() + label.slice(1);
 }
@@ -76,20 +105,18 @@ export function formatReportYear(year: number): string {
   return String(year);
 }
 
-function formatYmd(date: Date): string {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
-}
-
 export function formatReportDate(dateStr: string): string {
-  return new Date(`${dateStr}T12:00:00`).toLocaleDateString('es-BO', {
+  return dateFromYmd(dateStr).toLocaleDateString('es-BO', {
+    timeZone: TZ,
     weekday: 'short',
     day: 'numeric',
     month: 'short',
     year: 'numeric',
   });
+}
+
+export function formatReportDateTime(date = new Date()): string {
+  return date.toLocaleString('es-BO', { timeZone: TZ });
 }
 
 export function formatReportPeriod(from: string, to: string, year?: number): string {
@@ -118,7 +145,6 @@ export function buildReportSummary(
   const lines = [
     'REPORTE DE VENTAS — POS Restaurante',
     `Período: ${formatReportPeriod(report.from, report.to, report.year)}`,
-    `Zona horaria: ${report.timezone}`,
     '',
     `Total vendido: ${formatPrice(report.totalSales)}`,
     `Pedidos cobrados: ${report.paidOrderCount}`,
