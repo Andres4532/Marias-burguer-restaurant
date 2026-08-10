@@ -131,14 +131,30 @@ export class SettingsService {
     const updated = await this.prisma.restaurantSettings.update({
       where: { id: SETTINGS_ID },
       data: {
-        name: dto.name,
-        slug: dto.slug,
-        phone: dto.phone,
-        logoUrl: dto.logoUrl === '' ? null : dto.logoUrl,
-        qrImageUrl: dto.qrImageUrl === '' ? null : dto.qrImageUrl,
-        publicMenuEnabled: dto.publicMenuEnabled,
-        publicMenuOpenTime: dto.publicMenuOpenTime,
-        publicMenuCloseTime: dto.publicMenuCloseTime,
+        name: dto.name ?? current.name,
+        slug: dto.slug ?? current.slug,
+        phone: dto.phone !== undefined ? dto.phone : current.phone,
+        logoUrl:
+          dto.logoUrl !== undefined
+            ? dto.logoUrl === ''
+              ? null
+              : dto.logoUrl
+            : current.logoUrl,
+        qrImageUrl:
+          dto.qrImageUrl !== undefined
+            ? dto.qrImageUrl === ''
+              ? null
+              : dto.qrImageUrl
+            : current.qrImageUrl,
+        publicMenuEnabled: dto.publicMenuEnabled ?? current.publicMenuEnabled,
+        publicMenuOpenTime:
+          dto.publicMenuOpenTime !== undefined
+            ? dto.publicMenuOpenTime
+            : current.publicMenuOpenTime,
+        publicMenuCloseTime:
+          dto.publicMenuCloseTime !== undefined
+            ? dto.publicMenuCloseTime
+            : current.publicMenuCloseTime,
       },
     });
 

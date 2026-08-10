@@ -186,10 +186,16 @@ export default function PublicMenuOrderPage() {
     return true;
   };
 
-  const handleSubmitClick = () => {
+  const handleSubmitClick = async () => {
     if (!validateBeforeSubmit()) {
       setCartOpen(true);
       return;
+    }
+    try {
+      const data = await getPublicMenu(slug);
+      setQrImageUrl(data.restaurant.qrImageUrl);
+    } catch {
+      // Si falla la recarga, usamos el QR ya cargado al entrar al menú.
     }
     setPaymentMethod('EFECTIVO');
     setProofFile(null);

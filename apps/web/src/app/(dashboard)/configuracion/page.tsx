@@ -58,6 +58,23 @@ export default function ConfiguracionPage() {
     if (isJefa) load();
   }, [isJefa, load]);
 
+  const handleQrUpload = async (file: File) => {
+    setError('');
+    setSuccess('');
+    try {
+      const url = await uploadQrImage(file);
+      setQrImageUrl(url);
+      const updated = await updateSettings({ qrImageUrl: url });
+      const saved = updated.qrImageUrl ?? url;
+      setQrImageUrl(saved);
+      setSuccess('QR guardado. Ya aparece en el menú app.');
+      return saved;
+    } catch (e) {
+      setError(getErrorMessage(e));
+      throw e;
+    }
+  };
+
   const handleSave = async () => {
     setError('');
     setSuccess('');
@@ -204,8 +221,8 @@ export default function ConfiguracionPage() {
               label="QR para pagos del menú"
               value={qrImageUrl}
               onChange={setQrImageUrl}
-              onUpload={uploadQrImage}
-              hint="Los clientes verán esta imagen si eligen pagar por QR."
+              onUpload={handleQrUpload}
+              hint="Se guarda al subirla. Los clientes la verán si eligen pagar por QR."
               preview={
                 qrImageUrl ? (
                   <div className="rounded-xl border border-border bg-background p-3">
