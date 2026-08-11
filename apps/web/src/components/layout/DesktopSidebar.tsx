@@ -2,7 +2,12 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useEntrantesAlerts } from '@/components/entrantes/EntrantesAlertsProvider';
 import { NavIcon } from './NavIcon';
+import {
+  getNavBadgeCount,
+  NavNotificationBadge,
+} from './NavNotificationBadge';
 import { RestaurantLogo } from './RestaurantLogo';
 import { isNavActive, jefaOperacionNavItems, jefaAdminNavItems, jefaCatalogoNavItems, type NavItem } from './nav-config';
 
@@ -14,6 +19,7 @@ export function DesktopSidebar({
   logoUrl?: string | null;
 }) {
   const pathname = usePathname();
+  const { newOrderCount, deliveryNewCount } = useEntrantesAlerts();
 
   const operacion = jefaOperacionNavItems;
   const admin = jefaAdminNavItems;
@@ -26,9 +32,27 @@ export function DesktopSidebar({
       </div>
 
       <nav className="flex flex-col gap-6 text-sm font-bold flex-1 overflow-y-auto">
-        <NavGroup title="Operación" items={operacion} pathname={pathname} />
-        <NavGroup title="Administración" items={admin} pathname={pathname} />
-        <NavGroup title="Catálogo" items={catalogo} pathname={pathname} />
+        <NavGroup
+          title="Operación"
+          items={operacion}
+          pathname={pathname}
+          recojoCount={newOrderCount}
+          deliveryCount={deliveryNewCount}
+        />
+        <NavGroup
+          title="Administración"
+          items={admin}
+          pathname={pathname}
+          recojoCount={newOrderCount}
+          deliveryCount={deliveryNewCount}
+        />
+        <NavGroup
+          title="Catálogo"
+          items={catalogo}
+          pathname={pathname}
+          recojoCount={newOrderCount}
+          deliveryCount={deliveryNewCount}
+        />
       </nav>
 
       <Link
@@ -48,10 +72,14 @@ function NavGroup({
   title,
   items,
   pathname,
+  recojoCount,
+  deliveryCount,
 }: {
   title: string;
   items: NavItem[];
   pathname: string;
+  recojoCount: number;
+  deliveryCount: number;
 }) {
   return (
     <div>
@@ -61,6 +89,11 @@ function NavGroup({
       <div className="flex flex-col gap-1">
         {items.map((item) => {
           const active = isNavActive(pathname, item.href);
+          const badgeCount = getNavBadgeCount(
+            item.href,
+            recojoCount,
+            deliveryCount,
+          );
           return (
             <Link
               key={item.href}
@@ -71,8 +104,17 @@ function NavGroup({
                   : 'text-text-secondary hover:bg-white/[0.06] hover:text-foreground'
               }`}
             >
-              <NavIcon icon={item.icon} className="size-5 shrink-0" />
-              {item.label}
+              <span className="relative shrink-0">
+                <NavIcon icon={item.icon} className="size-5" />
+                {badgeCount > 0 && (
+                  <NavNotificationBadge
+                    count={badgeCount}
+                    size="sm"
+                    className="absolute -top-1.5 -right-2 ring-2 ring-card"
+                  />
+                )}
+              </span>
+              <span className="flex-1">{item.label}</span>
             </Link>
           );
         })}

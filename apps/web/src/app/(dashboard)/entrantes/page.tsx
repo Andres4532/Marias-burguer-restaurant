@@ -26,7 +26,7 @@ import {
 } from '@/types/orders';
 
 export default function EntrantesPage() {
-  const { live, newOrderCount, resetNewOrderCount } = useEntrantesAlerts();
+  const { live, newOrderCount, resetRecojoNewCount } = useEntrantesAlerts();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -63,8 +63,8 @@ export default function EntrantesPage() {
 
   useEffect(() => {
     load();
-    resetNewOrderCount();
-  }, [load, resetNewOrderCount]);
+    resetRecojoNewCount();
+  }, [load, resetRecojoNewCount]);
 
   useEffect(() => {
     if (newOrderCount > 0) {

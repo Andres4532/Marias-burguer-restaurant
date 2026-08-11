@@ -51,7 +51,7 @@ const SECTION_META = [
 
 export default function DeliveryPage() {
   const router = useRouter();
-  const { live, newOrderCount, deliveryNewCount, resetNewOrderCount } =
+  const { live, newOrderCount, deliveryNewCount, resetDeliveryNewCount } =
     useEntrantesAlerts();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -81,8 +81,8 @@ export default function DeliveryPage() {
 
   useEffect(() => {
     load();
-    resetNewOrderCount();
-  }, [load, resetNewOrderCount]);
+    resetDeliveryNewCount();
+  }, [load, resetDeliveryNewCount]);
 
   useEffect(() => {
     if (newOrderCount > 0 || deliveryNewCount > 0) {

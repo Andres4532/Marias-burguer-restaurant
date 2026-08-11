@@ -21,6 +21,8 @@ interface EntrantesAlertsContextValue {
   live: boolean;
   newOrderCount: number;
   deliveryNewCount: number;
+  resetRecojoNewCount: () => void;
+  resetDeliveryNewCount: () => void;
   resetNewOrderCount: () => void;
 }
 
@@ -28,6 +30,8 @@ const EntrantesAlertsContext = createContext<EntrantesAlertsContextValue>({
   live: false,
   newOrderCount: 0,
   deliveryNewCount: 0,
+  resetRecojoNewCount: () => {},
+  resetDeliveryNewCount: () => {},
   resetNewOrderCount: () => {},
 });
 
@@ -44,6 +48,14 @@ export function EntrantesAlertsProvider({
   const [newOrderCount, setNewOrderCount] = useState(0);
   const [deliveryNewCount, setDeliveryNewCount] = useState(0);
   const knownIds = useRef(new Set<string>());
+
+  const resetRecojoNewCount = useCallback(() => {
+    setNewOrderCount(0);
+  }, []);
+
+  const resetDeliveryNewCount = useCallback(() => {
+    setDeliveryNewCount(0);
+  }, []);
 
   const resetNewOrderCount = useCallback(() => {
     setNewOrderCount(0);
@@ -138,6 +150,8 @@ export function EntrantesAlertsProvider({
         live,
         newOrderCount,
         deliveryNewCount,
+        resetRecojoNewCount,
+        resetDeliveryNewCount,
         resetNewOrderCount,
       }}
     >
