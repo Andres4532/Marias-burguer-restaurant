@@ -345,6 +345,7 @@ export default function EditarPedidoPage() {
       <SaucePickerModal
         open={!!saucePickerProduct}
         product={saucePickerProduct}
+        orderType="MESA"
         onClose={() => setSaucePickerProduct(null)}
         onConfirm={handleSauceConfirm}
       />

@@ -356,6 +356,7 @@ export default function PosPage() {
       <SaucePickerModal
         open={!!saucePickerProduct}
         product={saucePickerProduct}
+        orderType={cart.orderType}
         onClose={() => setSaucePickerProduct(null)}
         onConfirm={handleSauceConfirm}
       />

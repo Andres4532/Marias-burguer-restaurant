@@ -589,6 +589,10 @@ export class OrdersService {
       );
 
       const saucesRequired = orderType !== OrderType.MESA;
+      const isTakeawayOrDelivery =
+        orderType === OrderType.PARA_LLEVAR ||
+        orderType === OrderType.DELIVERY;
+      const maxSaucesTakeawayDelivery = 3;
 
       if (product.sauceMode === ProductSauceMode.NONE) {
         if (requestedSauces.length > 0) {
@@ -615,6 +619,28 @@ export class OrdersService {
               `No repitas la misma salsa en ${product.name}`,
             );
           }
+          if (
+            isTakeawayOrDelivery &&
+            requestedSauces.length > maxSaucesTakeawayDelivery
+          ) {
+            throw new BadRequestException(
+              `Máximo ${maxSaucesTakeawayDelivery} salsas para ${product.name}`,
+            );
+          }
+        }
+
+        const hasSeparate = requestedSauces.some(
+          (selection) => selection.placement === SaucePlacement.SEPARATE,
+        );
+        if (hasSeparate && !isTakeawayOrDelivery) {
+          throw new BadRequestException(
+            `Salsa aparte solo aplica a recojo y delivery (${product.name})`,
+          );
+        }
+        if (hasSeparate && requestedSauces.length > 1) {
+          throw new BadRequestException(
+            `Si la quieres aparte, elige solo una salsa para ${product.name}`,
+          );
         }
       }
 
@@ -631,12 +657,12 @@ export class OrdersService {
           (entry) => entry.sauce.id === selection.sauceId,
         )!.sauce;
 
-        const placement = product.allowSauceSeparate
+        const placement = product.allowSauceSeparate && isTakeawayOrDelivery
           ? selection.placement
           : SaucePlacement.ON_PRODUCT;
 
         if (
-          !product.allowSauceSeparate &&
+          (!product.allowSauceSeparate || !isTakeawayOrDelivery) &&
           selection.placement === SaucePlacement.SEPARATE
         ) {
           throw new BadRequestException(

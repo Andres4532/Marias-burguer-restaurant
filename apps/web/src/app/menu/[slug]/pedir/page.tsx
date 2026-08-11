@@ -675,6 +675,7 @@ export default function PublicMenuOrderPage() {
       <SaucePickerModal
         open={!!saucePickerProduct}
         product={saucePickerProduct}
+        orderType={orderType ?? 'PARA_LLEVAR'}
         onClose={() => setSaucePickerProduct(null)}
         onConfirm={handleSauceConfirm}
       />

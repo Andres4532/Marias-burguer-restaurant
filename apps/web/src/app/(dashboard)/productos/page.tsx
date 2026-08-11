@@ -502,7 +502,7 @@ export default function ProductosPage() {
                 <ActiveCheckbox
                   checked={allowSauceSeparate}
                   onChange={setAllowSauceSeparate}
-                  label="Permitir salsa aparte"
+                  label="Permitir salsa aparte (recojo y delivery, 1 salsa)"
                 />
 
                 <div>
