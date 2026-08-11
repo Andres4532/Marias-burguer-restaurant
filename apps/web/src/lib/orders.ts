@@ -34,6 +34,9 @@ export const getOrders = (
 export const getEntrantesOrders = () =>
   getOrders(undefined, true, 'MENU_PUBLICO', undefined, true);
 
+export const getMesaOrders = () =>
+  getOrders(undefined, true, 'CAJA', 'MESA');
+
 export const getOrder = (id: string) =>
   apiFetch<Order>(`/orders/${id}`, {}, token());
 

@@ -297,6 +297,18 @@ export class OrdersService {
       notes: dto.notes,
       items: dto.items,
       createdById: userId,
+    }).then((order) => {
+      if (dto.type === OrderType.MESA) {
+        this.eventsService.emitEntrante({
+          id: order.id,
+          orderNumber: order.orderNumber,
+          type: order.type,
+          source: order.source,
+          customerName: order.customerName,
+          total: order.total,
+        });
+      }
+      return order;
     });
   }
 
@@ -369,7 +381,14 @@ export class OrdersService {
     });
 
     const mapped = this.mapOrder(order);
-    this.eventsService.emitEntrante(mapped);
+    this.eventsService.emitEntrante({
+      id: mapped.id,
+      orderNumber: mapped.orderNumber,
+      type: mapped.type,
+      source: mapped.source,
+      customerName: mapped.customerName,
+      total: mapped.total,
+    });
     return mapped;
   }
 

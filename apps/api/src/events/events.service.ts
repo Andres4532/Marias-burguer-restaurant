@@ -7,6 +7,7 @@ export interface EntranteStreamPayload {
     id: string;
     orderNumber: number;
     type: string;
+    source: string;
     customerName: string | null;
     total: number;
   };
@@ -20,6 +21,7 @@ export class EventsService {
     id: string;
     orderNumber: number;
     type: string;
+    source: string;
     customerName: string | null;
     total: number;
   }) {
@@ -29,6 +31,7 @@ export class EventsService {
         id: order.id,
         orderNumber: order.orderNumber,
         type: order.type,
+        source: order.source,
         customerName: order.customerName,
         total: order.total,
       },

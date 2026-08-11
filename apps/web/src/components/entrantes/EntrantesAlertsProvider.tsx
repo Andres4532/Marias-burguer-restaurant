@@ -19,19 +19,15 @@ import {
 
 interface EntrantesAlertsContextValue {
   live: boolean;
-  alertsEnabled: boolean;
   newOrderCount: number;
   deliveryNewCount: number;
-  enableAlerts: () => Promise<void>;
   resetNewOrderCount: () => void;
 }
 
 const EntrantesAlertsContext = createContext<EntrantesAlertsContextValue>({
   live: false,
-  alertsEnabled: false,
   newOrderCount: 0,
   deliveryNewCount: 0,
-  enableAlerts: async () => {},
   resetNewOrderCount: () => {},
 });
 
@@ -45,21 +41,9 @@ export function EntrantesAlertsProvider({
   children: React.ReactNode;
 }) {
   const [live, setLive] = useState(false);
-  const [alertsEnabled, setAlertsEnabled] = useState(false);
   const [newOrderCount, setNewOrderCount] = useState(0);
   const [deliveryNewCount, setDeliveryNewCount] = useState(0);
   const knownIds = useRef(new Set<string>());
-  const alertsEnabledRef = useRef(alertsEnabled);
-
-  useEffect(() => {
-    alertsEnabledRef.current = alertsEnabled;
-  }, [alertsEnabled]);
-
-  const enableAlerts = useCallback(async () => {
-    unlockAudio();
-    const granted = await requestNotificationPermission();
-    setAlertsEnabled(granted);
-  }, []);
 
   const resetNewOrderCount = useCallback(() => {
     setNewOrderCount(0);
@@ -67,17 +51,25 @@ export function EntrantesAlertsProvider({
   }, []);
 
   useEffect(() => {
-    const unlockOnInteraction = () => unlockAudio();
-    document.addEventListener('click', unlockOnInteraction, { once: true });
-    document.addEventListener('keydown', unlockOnInteraction, { once: true });
+    let activated = false;
+
+    const activateAlerts = () => {
+      if (activated) return;
+      activated = true;
+      unlockAudio();
+      void requestNotificationPermission();
+    };
+
+    document.addEventListener('click', activateAlerts, { once: true });
+    document.addEventListener('keydown', activateAlerts, { once: true });
 
     if ('Notification' in window && Notification.permission === 'granted') {
-      setAlertsEnabled(true);
+      activateAlerts();
     }
 
     return () => {
-      document.removeEventListener('click', unlockOnInteraction);
-      document.removeEventListener('keydown', unlockOnInteraction);
+      document.removeEventListener('click', activateAlerts);
+      document.removeEventListener('keydown', activateAlerts);
     };
   }, []);
 
@@ -101,17 +93,19 @@ export function EntrantesAlertsProvider({
           if (event.type === 'ping') return;
 
           if (event.type === 'new_order' && event.order) {
+            if (event.order.source && event.order.source !== 'MENU_PUBLICO') {
+              return;
+            }
+
             const isNew = !knownIds.current.has(event.order.id);
             knownIds.current.add(event.order.id);
 
             if (isNew) {
               playNewOrderAlert();
-              if (alertsEnabledRef.current) {
-                showNewOrderNotification(
-                  event.order.orderNumber,
-                  event.order.customerName ?? undefined,
-                );
-              }
+              showNewOrderNotification(
+                event.order.orderNumber,
+                event.order.customerName ?? undefined,
+              );
 
               if (event.order.type === 'DELIVERY') {
                 setDeliveryNewCount((count) => count + 1);
@@ -142,10 +136,8 @@ export function EntrantesAlertsProvider({
     <EntrantesAlertsContext.Provider
       value={{
         live,
-        alertsEnabled,
         newOrderCount,
         deliveryNewCount,
-        enableAlerts,
         resetNewOrderCount,
       }}
     >

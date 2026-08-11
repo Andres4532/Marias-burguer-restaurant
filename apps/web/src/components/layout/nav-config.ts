@@ -4,6 +4,7 @@ export interface NavItem {
   icon:
     | 'home'
     | 'pos'
+  | 'mesas'
   | 'entrantes'
   | 'delivery'
   | 'pedidos'
@@ -20,6 +21,7 @@ export interface NavItem {
 export const jefaNavItems: NavItem[] = [
   { href: '/dashboard', label: 'Inicio', icon: 'home' },
   { href: '/pos', label: 'POS', icon: 'pos' },
+  { href: '/mesas', label: 'Mesas', icon: 'mesas' },
   { href: '/delivery', label: 'Delivery', icon: 'delivery' },
   { href: '/entrantes', label: 'Recojo', icon: 'entrantes' },
   { href: '/pedidos', label: 'Pedidos', icon: 'pedidos' },
@@ -35,6 +37,7 @@ export const jefaNavItems: NavItem[] = [
 
 export const cajeraNavItems: NavItem[] = [
   { href: '/dashboard', label: 'Inicio', icon: 'home' },
+  { href: '/mesas', label: 'Mesas', icon: 'mesas' },
   { href: '/delivery', label: 'Delivery', icon: 'delivery' },
   { href: '/pos', label: 'POS', icon: 'pos' },
   { href: '/pedidos', label: 'Pedidos', icon: 'pedidos' },
@@ -42,6 +45,7 @@ export const cajeraNavItems: NavItem[] = [
 
 export const jefaMobileNavItems: NavItem[] = [
   { href: '/dashboard', label: 'Inicio', icon: 'home' },
+  { href: '/mesas', label: 'Mesas', icon: 'mesas' },
   { href: '/delivery', label: 'Delivery', icon: 'delivery' },
   { href: '/pos', label: 'POS', icon: 'pos' },
   { href: '/entrantes', label: 'Recojo', icon: 'entrantes' },
@@ -51,6 +55,7 @@ export const jefaMobileNavItems: NavItem[] = [
 export function isNavActive(pathname: string, href: string): boolean {
   if (pathname === href) return true;
   if (href === '/pedidos' && pathname.startsWith('/pedidos')) return true;
+  if (href === '/mesas' && pathname.startsWith('/mesas')) return true;
   if (href === '/entrantes' && pathname.startsWith('/entrantes')) return true;
   if (href === '/delivery' && pathname.startsWith('/delivery')) return true;
   if (href === '/pos' && pathname.startsWith('/pos')) return true;

@@ -3,6 +3,8 @@ import type { NavItem } from './nav-config';
 const paths: Record<NavItem['icon'], string> = {
   home: 'M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z',
   pos: 'M7 18c-1.1 0-1.99.9-1.99 2S5.9 22 7 22s2-.9 2-2-.9-2-2-2zM1 2v2h2l3.6 7.59-1.35 2.45c-.16.28-.25.61-.25.96 0 1.1.9 2 2 2h12v-2H7.42c-.14 0-.25-.1-.25-.25l.03-.12.9-1.63h7.45c.75 0 1.41-.41 1.75-1.03l3.58-6.49A1.003 1.003 0 0020 4H5.21l-.94-2H1zm16 16c-1.1 0-1.99.9-1.99 2s.89 2 1.99 2 2-.9 2-2-.9-2-2-2z',
+  mesas:
+    'M4 10V4h16v2H4v4zm0 4h16v2H4v-2zm0 4h10v2H4v-2zM2 22V2h20v20H2zm2-2h16V4H4v16z',
   entrantes:
     'M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V5h14v14zM7 10h2v7H7zm4-3h2v10h-2zm4 6h2v4h-2z',
   delivery:

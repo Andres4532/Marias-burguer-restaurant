@@ -26,8 +26,7 @@ import {
 } from '@/types/orders';
 
 export default function EntrantesPage() {
-  const { live, alertsEnabled, newOrderCount, enableAlerts, resetNewOrderCount } =
-    useEntrantesAlerts();
+  const { live, newOrderCount, resetNewOrderCount } = useEntrantesAlerts();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -117,16 +116,9 @@ export default function EntrantesPage() {
         title="Recojo entrante"
         description="Pedidos para recojo del menú público"
         action={
-          <div className="flex gap-2 flex-wrap">
-            {!alertsEnabled && (
-              <Button variant="secondary" onClick={() => void enableAlerts()}>
-                Activar avisos
-              </Button>
-            )}
-            <Button variant="secondary" onClick={() => load()}>
-              Actualizar
-            </Button>
-          </div>
+          <Button variant="secondary" onClick={() => load()}>
+            Actualizar
+          </Button>
         }
       />
 
@@ -146,9 +138,7 @@ export default function EntrantesPage() {
           {live ? 'En vivo' : 'Reconectando...'}
         </span>
         <span className="text-xs text-text-secondary">
-          {alertsEnabled
-            ? 'Sonido + notificaciones activos'
-            : 'Toca la pantalla o activa avisos para escuchar pedidos'}
+          Avisos de sonido y notificación activos
         </span>
       </div>
 

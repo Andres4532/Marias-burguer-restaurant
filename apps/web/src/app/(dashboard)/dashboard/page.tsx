@@ -17,11 +17,17 @@ interface QuickLink {
 
 const cajeraLinks: QuickLink[] = [
   {
+    href: '/mesas',
+    title: 'Mesas',
+    description: 'Pedidos de mesa del POS en tiempo real',
+    icon: 'mesas',
+    highlight: true,
+  },
+  {
     href: '/delivery',
     title: 'Delivery',
     description: 'Control paso a paso de pedidos a domicilio',
     icon: 'delivery',
-    highlight: true,
   },
   {
     href: '/pos',

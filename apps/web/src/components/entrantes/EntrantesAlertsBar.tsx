@@ -2,15 +2,13 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Button } from '@/components/ui/Button';
 import { useEntrantesAlerts } from './EntrantesAlertsProvider';
 
 export function EntrantesAlertsBar() {
   const pathname = usePathname();
-  const { live, alertsEnabled, newOrderCount, deliveryNewCount, enableAlerts } =
-    useEntrantesAlerts();
+  const { live, newOrderCount, deliveryNewCount } = useEntrantesAlerts();
 
-  if (pathname.startsWith('/entrantes') || pathname.startsWith('/delivery')) {
+  if (pathname.startsWith('/entrantes') || pathname.startsWith('/delivery') || pathname.startsWith('/mesas')) {
     return null;
   }
 
@@ -28,12 +26,6 @@ export function EntrantesAlertsBar() {
         />
         {live ? 'Pedidos en vivo' : 'Reconectando...'}
       </span>
-
-      {!alertsEnabled && (
-        <Button variant="secondary" onClick={() => void enableAlerts()}>
-          Activar avisos
-        </Button>
-      )}
 
       {deliveryNewCount > 0 && (
         <Link

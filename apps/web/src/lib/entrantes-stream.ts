@@ -7,6 +7,7 @@ export interface EntranteStreamEvent {
     id: string;
     orderNumber: number;
     type: string;
+    source?: string;
     customerName: string | null;
     total: number;
   };
