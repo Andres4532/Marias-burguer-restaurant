@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { NavIcon } from './NavIcon';
 import { RestaurantLogo } from './RestaurantLogo';
-import { isNavActive, jefaNavItems } from './nav-config';
+import { isNavActive, jefaOperacionNavItems, jefaAdminNavItems, jefaCatalogoNavItems, type NavItem } from './nav-config';
 
 export function DesktopSidebar({
   name = 'POS Restaurante',
@@ -15,9 +15,9 @@ export function DesktopSidebar({
 }) {
   const pathname = usePathname();
 
-  const operacion = jefaNavItems.slice(0, 4);
-  const admin = jefaNavItems.slice(4, 7);
-  const catalogo = jefaNavItems.slice(7);
+  const operacion = jefaOperacionNavItems;
+  const admin = jefaAdminNavItems;
+  const catalogo = jefaCatalogoNavItems;
 
   return (
     <aside className="hidden lg:flex w-72 shrink-0 flex-col border-r border-border bg-card p-5">
@@ -50,7 +50,7 @@ function NavGroup({
   pathname,
 }: {
   title: string;
-  items: typeof jefaNavItems;
+  items: NavItem[];
   pathname: string;
 }) {
   return (

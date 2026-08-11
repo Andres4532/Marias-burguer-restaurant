@@ -18,21 +18,33 @@ export interface NavItem {
     | 'ordenMenu';
 }
 
-export const jefaNavItems: NavItem[] = [
+export const jefaOperacionNavItems: NavItem[] = [
   { href: '/dashboard', label: 'Inicio', icon: 'home' },
   { href: '/pos', label: 'POS', icon: 'pos' },
   { href: '/mesas', label: 'Mesas', icon: 'mesas' },
   { href: '/delivery', label: 'Delivery', icon: 'delivery' },
   { href: '/entrantes', label: 'Recojo', icon: 'entrantes' },
   { href: '/pedidos', label: 'Pedidos', icon: 'pedidos' },
+];
+
+export const jefaAdminNavItems: NavItem[] = [
   { href: '/reportes', label: 'Reportes', icon: 'reportes' },
   { href: '/usuarios', label: 'Usuarios', icon: 'usuarios' },
   { href: '/configuracion', label: 'Configuración', icon: 'config' },
+];
+
+export const jefaCatalogoNavItems: NavItem[] = [
   { href: '/categorias', label: 'Categorías', icon: 'categorias' },
   { href: '/productos', label: 'Productos', icon: 'productos' },
   { href: '/salsas', label: 'Salsas', icon: 'salsas' },
   { href: '/orden-menu', label: 'Orden del menú', icon: 'ordenMenu' },
   { href: '/inventario', label: 'Inventario', icon: 'inventario' },
+];
+
+export const jefaNavItems: NavItem[] = [
+  ...jefaOperacionNavItems,
+  ...jefaAdminNavItems,
+  ...jefaCatalogoNavItems,
 ];
 
 export const cajeraNavItems: NavItem[] = [
