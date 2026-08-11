@@ -520,7 +520,7 @@ export class OrdersService {
       throw new BadRequestException('El pedido debe tener al menos un producto');
     }
 
-    const productIds = items.map((i) => i.productId);
+    const productIds = [...new Set(items.map((i) => i.productId))];
     const products = await this.prisma.product.findMany({
       where: { id: { in: productIds }, deletedAt: null, isActive: true },
       include: {

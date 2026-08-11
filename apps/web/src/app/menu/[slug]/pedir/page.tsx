@@ -87,6 +87,12 @@ export default function PublicMenuOrderPage() {
     }
   }, [orderType, router, slug]);
 
+  useEffect(() => {
+    if (orderType) {
+      cart.setOrderType(orderType);
+    }
+  }, [orderType, cart.setOrderType]);
+
   const loadMenu = useCallback(async () => {
     setLoading(true);
     setError('');
