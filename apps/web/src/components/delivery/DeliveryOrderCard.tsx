@@ -8,6 +8,7 @@ import { formatOrderNumber, formatTime } from '@/lib/orders';
 import { copyDeliveryWhatsAppMessage } from '@/lib/delivery-handoff';
 import { getDeliveryWorkflowStep, shouldShowSpeedHandoff } from '@/lib/delivery-workflow';
 import { DeliveryMapLinks } from '@/components/orders/DeliveryMapLinks';
+import { hasDeliveryCoordinates } from '@/lib/maps';
 import type { Order } from '@/types/orders';
 
 interface DeliveryOrderCardProps {
@@ -23,6 +24,11 @@ export function DeliveryOrderCard({
 }: DeliveryOrderCardProps) {
   const [copied, setCopied] = useState(false);
   const workflow = getDeliveryWorkflowStep(order);
+  const hasMap = hasDeliveryCoordinates(
+    order.deliveryLatitude,
+    order.deliveryLongitude,
+  );
+  const showSpeed = shouldShowSpeedHandoff(order);
 
   const handleCopySpeed = async () => {
     try {
@@ -106,26 +112,38 @@ export function DeliveryOrderCard({
         </div>
       )}
 
-      <div className="mt-3 flex flex-wrap gap-2">
-        {shouldShowSpeedHandoff(order) && (
+      <div className="mt-3 space-y-2">
+        {showSpeed && (
           <Button
             type="button"
             variant="secondary"
             size="sm"
+            className="w-full"
             onClick={() => void handleCopySpeed()}
           >
             {copied ? '¡Copiado!' : 'Copiar para Speed'}
           </Button>
         )}
-        <DeliveryMapLinks
-          latitude={order.deliveryLatitude}
-          longitude={order.deliveryLongitude}
-        />
-        <Link href={`/pedidos/${order.id}`}>
-          <Button type="button" variant="secondary" size="sm">
-            Detalle
-          </Button>
-        </Link>
+
+        <div
+          className={`grid gap-2 ${hasMap ? 'grid-cols-2' : 'grid-cols-1'}`}
+        >
+          {hasMap && (
+            <DeliveryMapLinks
+              latitude={order.deliveryLatitude}
+              longitude={order.deliveryLongitude}
+              fullWidth
+            />
+          )}
+          <Link
+            href={`/pedidos/${order.id}`}
+            className={hasMap ? '' : 'col-span-1'}
+          >
+            <Button type="button" variant="secondary" size="sm" className="w-full">
+              Detalle
+            </Button>
+          </Link>
+        </div>
       </div>
     </article>
   );

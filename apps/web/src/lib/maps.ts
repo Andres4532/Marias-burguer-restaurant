@@ -5,10 +5,6 @@ export function getGoogleMapsUrl(lat: number, lng: number) {
   return `https://www.google.com/maps?q=${lat},${lng}`;
 }
 
-export function getWazeUrl(lat: number, lng: number) {
-  return `https://waze.com/ul?ll=${lat},${lng}&navigate=yes`;
-}
-
 export function hasDeliveryCoordinates(
   lat: number | null | undefined,
   lng: number | null | undefined,
