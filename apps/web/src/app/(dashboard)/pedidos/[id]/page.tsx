@@ -225,29 +225,31 @@ export default function PedidoDetallePage() {
             {order.type === 'DELIVERY' && (
               <Card
                 padding="sm"
-                className="mb-5 bg-indigo-50 border-indigo-100 text-sm space-y-1"
+                className="mb-5 bg-background border-border text-sm space-y-1"
               >
-                <p className="font-extrabold text-indigo-900">Datos de entrega</p>
+                <p className="font-extrabold text-foreground mb-1">
+                  Datos de entrega
+                </p>
                 {order.customerName && (
-                  <p>
+                  <p className="text-foreground">
                     <span className="text-text-secondary">Cliente:</span>{' '}
                     {order.customerName}
                   </p>
                 )}
                 {order.customerPhone && (
-                  <p>
+                  <p className="text-foreground">
                     <span className="text-text-secondary">Teléfono:</span>{' '}
                     {order.customerPhone}
                   </p>
                 )}
                 {order.deliveryAddress && (
-                  <p>
+                  <p className="text-foreground">
                     <span className="text-text-secondary">Dirección:</span>{' '}
                     {order.deliveryAddress}
                   </p>
                 )}
                 {order.deliveryReference && (
-                  <p>
+                  <p className="text-foreground">
                     <span className="text-text-secondary">Referencia:</span>{' '}
                     {order.deliveryReference}
                   </p>
