@@ -1,4 +1,5 @@
-export const DEFAULT_MAP_CENTER = { lat: -17.7833, lng: -63.1821 };
+/** Centro de Cochabamba, Bolivia */
+export const DEFAULT_MAP_CENTER = { lat: -17.3935, lng: -66.157 };
 
 export function getGoogleMapsUrl(lat: number, lng: number) {
   return `https://www.google.com/maps?q=${lat},${lng}`;
