@@ -44,3 +44,42 @@ export function getCurrentPosition(): Promise<GeolocationPosition> {
     });
   });
 }
+
+export type GeolocationPermissionState =
+  | 'granted'
+  | 'denied'
+  | 'prompt'
+  | 'unsupported';
+
+export async function getGeolocationPermissionState(): Promise<GeolocationPermissionState> {
+  if (typeof window === 'undefined' || !navigator.geolocation) {
+    return 'unsupported';
+  }
+
+  if (navigator.permissions?.query) {
+    try {
+      const result = await navigator.permissions.query({ name: 'geolocation' });
+      if (result.state === 'granted') return 'granted';
+      if (result.state === 'denied') return 'denied';
+      return 'prompt';
+    } catch {
+      // Safari u otros navegadores pueden no soportar la consulta.
+    }
+  }
+
+  return 'prompt';
+}
+
+export async function requestGeolocationPermission(): Promise<GeolocationPermissionState> {
+  const current = await getGeolocationPermissionState();
+  if (current === 'granted' || current === 'unsupported') {
+    return current;
+  }
+
+  try {
+    await getCurrentPosition();
+    return 'granted';
+  } catch {
+    return getGeolocationPermissionState();
+  }
+}
