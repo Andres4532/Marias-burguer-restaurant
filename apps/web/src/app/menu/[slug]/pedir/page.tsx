@@ -19,6 +19,7 @@ import {
   uploadPublicPaymentProof,
 } from '@/lib/public-menu';
 import { normalizeMediaUrl } from '@/lib/media-url';
+import { downloadMediaFile } from '@/lib/download-media';
 import { DeliveryFormFields } from '@/components/orders/DeliveryFormFields';
 import { isDeliveryLocationComplete } from '@/lib/maps';
 import { ProductImage } from '@/components/ui/ProductImage';
@@ -76,6 +77,7 @@ export default function PublicMenuOrderPage() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('EFECTIVO');
   const [proofFile, setProofFile] = useState<File | null>(null);
+  const [downloadingQr, setDownloadingQr] = useState(false);
   const [saucePickerProduct, setSaucePickerProduct] =
     useState<CatalogProduct | null>(null);
 
@@ -582,6 +584,29 @@ export default function PublicMenuOrderPage() {
                   alt="Código QR de pago"
                   className="mx-auto max-h-56 w-auto rounded-lg object-contain bg-white p-2"
                 />
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  className="w-full sm:w-auto"
+                  disabled={downloadingQr}
+                  onClick={() => {
+                    setDownloadingQr(true);
+                    setError('');
+                    void downloadMediaFile(
+                      normalizeMediaUrl(qrImageUrl) ?? qrImageUrl,
+                      'qr-pago.jpg',
+                    )
+                      .catch(() => {
+                        setError(
+                          'No se pudo descargar el QR. Mantén presionada la imagen para guardarla.',
+                        );
+                      })
+                      .finally(() => setDownloadingQr(false));
+                  }}
+                >
+                  {downloadingQr ? 'Descargando…' : 'Descargar QR'}
+                </Button>
                 <label className="block">
                   <span className="mb-1.5 block text-sm font-semibold text-foreground">
                     Comprobante de pago
