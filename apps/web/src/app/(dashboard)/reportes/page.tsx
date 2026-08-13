@@ -83,7 +83,28 @@ export default function ReportesPage() {
       if (preset === 'year') {
         setReport(await getYearReport(selectedYear));
       } else {
-        setReport(await getRangeReport(from, to));
+        let rangeFrom = from;
+        let rangeTo = to;
+        if (preset === 'today') {
+          const t = getTodayInTz();
+          rangeFrom = t;
+          rangeTo = t;
+          setFrom(t);
+          setTo(t);
+        } else if (preset === 'week') {
+          const t = getTodayInTz();
+          rangeFrom = getWeekStart(t);
+          rangeTo = t;
+          setFrom(rangeFrom);
+          setTo(rangeTo);
+        } else if (preset === 'month') {
+          const t = getTodayInTz();
+          rangeFrom = getMonthStart(t);
+          rangeTo = t;
+          setFrom(rangeFrom);
+          setTo(rangeTo);
+        }
+        setReport(await getRangeReport(rangeFrom, rangeTo));
       }
     } catch (e) {
       setError(getErrorMessage(e));
@@ -95,6 +116,17 @@ export default function ReportesPage() {
   useEffect(() => {
     if (isJefa) load();
   }, [isJefa, load]);
+
+  useEffect(() => {
+    const refreshOnVisible = () => {
+      if (document.visibilityState !== 'visible' || !isJefa) return;
+      if (preset === 'today' || preset === 'week' || preset === 'month') {
+        void load();
+      }
+    };
+    document.addEventListener('visibilitychange', refreshOnVisible);
+    return () => document.removeEventListener('visibilitychange', refreshOnVisible);
+  }, [isJefa, load, preset]);
 
   const handleCopy = async () => {
     if (!report) return;

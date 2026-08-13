@@ -31,7 +31,7 @@ export function TicketPreviewModal({ order, open, onClose }: TicketPreviewModalP
         </div>
         <TicketPrintHint />
         <p className="text-xs text-gray-500 text-center">
-          3 tickets separados (Cocina, Caja, Cliente). Copias: 1 en el diálogo.
+          2 tickets separados (Cocina, Caja). Copias: 1 en el diálogo.
         </p>
         <div className="flex gap-2">
           <Button
@@ -40,7 +40,7 @@ export function TicketPreviewModal({ order, open, onClose }: TicketPreviewModalP
             }}
             className="flex-1 py-3"
           >
-            Imprimir 3 copias
+            Imprimir 2 copias
           </Button>
           <Button variant="secondary" onClick={onClose} className="flex-1">
             Cerrar

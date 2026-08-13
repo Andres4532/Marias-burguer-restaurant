@@ -9,7 +9,7 @@ import {
   measureTicketPageHeightMm,
 } from './ticket-print-styles';
 
-export const TICKET_COPIES = ['COCINA', 'CAJA', 'CLIENTE'] as const;
+export const TICKET_COPIES = ['COCINA', 'CAJA'] as const;
 export type TicketCopyLabel = (typeof TICKET_COPIES)[number];
 
 interface KitchenTicketProps {
