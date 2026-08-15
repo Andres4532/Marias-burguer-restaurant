@@ -19,7 +19,7 @@ import {
   formatTime,
 } from '@/lib/orders';
 import { formatPrice, getErrorMessage } from '@/lib/catalog';
-import { formatCartSauceLine } from '@/lib/sauce-labels';
+import { formatOrderItemSauces } from '@/lib/sauce-labels';
 import { normalizeMediaUrl } from '@/lib/media-url';
 import {
   ORDER_TYPE_LABELS,
@@ -297,14 +297,14 @@ export default function PedidoDetallePage() {
                         {item.extras.map((e) => e.extraName).join(' · ')}
                       </p>
                     )}
-                    {item.sauces.length > 0 && (
-                      <p className="text-xs text-text-secondary mt-0.5">
-                        Salsa:{' '}
-                        {item.sauces
-                          .map((s) => formatCartSauceLine(s.sauceName, s.placement))
-                          .join(' · ')}
-                      </p>
-                    )}
+                    {(() => {
+                      const sauceLine = formatOrderItemSauces(item);
+                      return sauceLine ? (
+                        <p className="text-xs text-text-secondary mt-0.5">
+                          Salsa: {sauceLine}
+                        </p>
+                      ) : null;
+                    })()}
                     {item.notes && (
                       <p className="text-xs text-primary mt-0.5 font-medium">
                         Nota: {item.notes}

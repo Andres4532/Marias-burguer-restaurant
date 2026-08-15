@@ -9,6 +9,7 @@ export function cartItemsToOrderInput(items: CartItem[]): CreateOrderItemInput[]
     sauces: item.sauces.length
       ? item.sauces.map((s) => ({ sauceId: s.id, placement: s.placement }))
       : undefined,
+    noSauce: item.noSauce ? true : undefined,
     notes: item.notes,
   }));
 }

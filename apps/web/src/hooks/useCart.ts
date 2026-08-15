@@ -25,6 +25,7 @@ export interface CartItem {
   quantity: number;
   extras: CartExtra[];
   sauces: CartSauce[];
+  noSauce?: boolean;
   notes?: string;
 }
 
@@ -32,7 +33,11 @@ function itemKey(
   productId: string,
   extraIds: string[],
   sauces: CartSauce[],
+  noSauce = false,
 ) {
+  if (noSauce) {
+    return `${productId}:${extraIds.sort().join(',')}:__no_sauce__`;
+  }
   const saucePart = sauces
     .map((s) => `${s.id}:${s.placement}`)
     .sort()
@@ -68,11 +73,13 @@ export function useCart() {
       extras: CartExtra[],
       sauces: CartSauce[] = [],
       notes?: string,
+      noSauce = false,
     ) => {
       const key = itemKey(
         product.id,
         extras.map((e) => e.id),
         sauces,
+        noSauce,
       );
 
       setItems((prev) => {
@@ -92,6 +99,7 @@ export function useCart() {
             quantity: 1,
             extras,
             sauces,
+            noSauce: noSauce || undefined,
             notes,
           },
         ];
@@ -147,7 +155,7 @@ export function useCart() {
         }));
         const extrasTotal = item.extras.reduce((sum, extra) => sum + extra.price, 0);
         return {
-          key: itemKey(item.productId, extraIds, sauces),
+          key: itemKey(item.productId, extraIds, sauces, item.noSauce),
           productId: item.productId,
           productName: item.productName,
           basePrice: item.unitPrice - extrasTotal,
@@ -158,6 +166,7 @@ export function useCart() {
             price: extra.price,
           })),
           sauces,
+          noSauce: item.noSauce || undefined,
           notes: item.notes ?? undefined,
         };
       }),

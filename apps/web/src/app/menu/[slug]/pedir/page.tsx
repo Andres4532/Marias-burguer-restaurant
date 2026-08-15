@@ -152,9 +152,9 @@ export default function PublicMenuOrderPage() {
     cart.addItem(product, []);
   };
 
-  const handleSauceConfirm = (sauces: CartSauce[]) => {
+  const handleSauceConfirm = (sauces: CartSauce[], noSauce: boolean) => {
     if (!saucePickerProduct) return;
-    cart.addItem(saucePickerProduct, [], sauces);
+    cart.addItem(saucePickerProduct, [], sauces, undefined, noSauce);
     setSaucePickerProduct(null);
   };
 

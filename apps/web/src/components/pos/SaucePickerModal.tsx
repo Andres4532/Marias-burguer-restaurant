@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
-import { SAUCE_PLACEMENT_LABELS } from '@/lib/sauce-labels';
+import { SAUCE_NONE_LABEL, SAUCE_PLACEMENT_LABELS } from '@/lib/sauce-labels';
 import {
   MAX_SAUCES_TAKEAWAY_DELIVERY,
   canShowSaucePlacement,
@@ -20,7 +20,7 @@ interface SaucePickerModalProps {
   product: CatalogProduct | null;
   orderType: OrderType;
   onClose: () => void;
-  onConfirm: (sauces: CartSauce[]) => void;
+  onConfirm: (sauces: CartSauce[], noSauce: boolean) => void;
 }
 
 export function SaucePickerModal({
@@ -31,12 +31,14 @@ export function SaucePickerModal({
   onConfirm,
 }: SaucePickerModalProps) {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [noSauce, setNoSauce] = useState(false);
   const [placement, setPlacement] = useState<SaucePlacement>('ON_PRODUCT');
   const [error, setError] = useState('');
 
   useEffect(() => {
     if (!open || !product) return;
     setSelectedIds([]);
+    setNoSauce(false);
     setPlacement('ON_PRODUCT');
     setError('');
   }, [open, product?.id]);
@@ -50,8 +52,15 @@ export function SaucePickerModal({
   );
   const maxSauces = getMaxSaucesForProduct(orderType, product.sauceMode, placement);
 
+  const selectNoSauce = () => {
+    setError('');
+    setNoSauce(true);
+    setSelectedIds([]);
+  };
+
   const toggleSauce = (sauceId: string) => {
     setError('');
+    setNoSauce(false);
     if (isSingle || maxSauces === 1) {
       setSelectedIds([sauceId]);
       return;
@@ -77,12 +86,18 @@ export function SaucePickerModal({
   };
 
   const handleConfirm = () => {
+    if (noSauce) {
+      onConfirm([], true);
+      onClose();
+      return;
+    }
+
     if (isSingle && selectedIds.length !== 1) {
-      setError('Selecciona una salsa');
+      setError('Selecciona una salsa o marca sin salsa');
       return;
     }
     if (!isSingle && selectedIds.length === 0) {
-      setError('Selecciona al menos una salsa');
+      setError('Selecciona al menos una salsa o marca sin salsa');
       return;
     }
     if (placement === 'SEPARATE' && selectedIds.length !== 1) {
@@ -103,17 +118,17 @@ export function SaucePickerModal({
       };
     });
 
-    onConfirm(sauces);
+    onConfirm(sauces, false);
     onClose();
   };
 
   const selectionHint = isSingle
-    ? 'Elige una salsa para acompañar este producto.'
+    ? 'Elige una salsa, o indica si no quieres ninguna.'
     : placement === 'SEPARATE'
       ? 'Si la quieres aparte, elige solo una salsa.'
       : maxSauces === MAX_SAUCES_TAKEAWAY_DELIVERY
-        ? `Elige hasta ${maxSauces} salsas para acompañar este producto.`
-        : 'Elige una o más salsas para acompañar este producto.';
+        ? `Elige hasta ${maxSauces} salsas, o marca sin salsa.`
+        : 'Elige una o más salsas, o marca sin salsa.';
 
   return (
     <Modal open={open} onClose={onClose} title={`Salsas · ${product.name}`}>
@@ -121,9 +136,27 @@ export function SaucePickerModal({
         <p className="text-sm text-text-secondary">{selectionHint}</p>
 
         <div className="space-y-2 max-h-56 overflow-y-auto rounded-xl border border-border bg-background p-3">
+          <label
+            className={`flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2 transition ${
+              noSauce ? 'bg-primary/10' : 'hover:bg-white/[0.04]'
+            }`}
+          >
+            <input
+              type="radio"
+              name={`sauce-choice-${product.id}`}
+              checked={noSauce}
+              onChange={selectNoSauce}
+              className="size-4 accent-primary"
+            />
+            <span className="text-sm font-semibold text-foreground">
+              {SAUCE_NONE_LABEL}
+            </span>
+          </label>
+
           {product.sauces.map((sauce) => {
-            const checked = selectedIds.includes(sauce.id);
+            const checked = !noSauce && selectedIds.includes(sauce.id);
             const atMax =
+              !noSauce &&
               !isSingle &&
               maxSauces > 1 &&
               !checked &&
@@ -155,7 +188,7 @@ export function SaucePickerModal({
           })}
         </div>
 
-        {showPlacement && (
+        {showPlacement && !noSauce && selectedIds.length > 0 && (
           <div className="space-y-2">
             <p className="text-xs font-bold uppercase tracking-wider text-text-secondary">
               ¿Cómo la(s) quieres?

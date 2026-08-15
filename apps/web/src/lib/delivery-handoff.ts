@@ -1,6 +1,7 @@
 import { formatOrderNumber } from '@/lib/orders';
 import { formatPrice } from '@/lib/catalog';
 import { getGoogleMapsUrl, hasDeliveryCoordinates } from '@/lib/maps';
+import { formatOrderItemSauces } from '@/lib/sauce-labels';
 import type { Order } from '@/types/orders';
 
 function formatOrderItems(order: Order): string {
@@ -10,10 +11,8 @@ function formatOrderItems(order: Order): string {
         item.extras.length > 0
           ? ` (${item.extras.map((e) => e.extraName).join(', ')})`
           : '';
-      const sauces =
-        item.sauces.length > 0
-          ? ` [Salsa: ${item.sauces.map((s) => (s.placement === 'SEPARATE' ? `${s.sauceName} aparte` : s.sauceName)).join(', ')}]`
-          : '';
+      const sauceLine = formatOrderItemSauces(item);
+      const sauces = sauceLine ? ` [Salsa: ${sauceLine}]` : '';
       const note = item.notes ? ` — Nota: ${item.notes}` : '';
       return `• ${item.quantity}× ${item.productName}${extras}${sauces}${note}`;
     })

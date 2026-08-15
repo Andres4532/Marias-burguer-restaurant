@@ -186,6 +186,7 @@ export class OrdersService {
       quantity: number;
       lineTotal: { toString(): string };
       notes: string | null;
+      noSauce?: boolean;
       extras: Array<{
         id: string;
         extraId: string;
@@ -238,6 +239,7 @@ export class OrdersService {
         quantity: item.quantity,
         lineTotal: toNumber(item.lineTotal),
         notes: item.notes,
+        noSauce: item.noSauce ?? false,
         extras: item.extras.map((e) => ({
           id: e.id,
           extraId: e.extraId,
@@ -561,6 +563,7 @@ export class OrdersService {
       quantity: number;
       lineTotal: number;
       notes?: string;
+      noSauce: boolean;
       extras: Array<{ extraId: string; extraName: string; price: number }>;
       sauces: Array<{
         sauceId: string;
@@ -573,6 +576,7 @@ export class OrdersService {
       const product = productMap.get(item.productId)!;
       const extraIds = item.extraIds ?? [];
       const requestedSauces = item.sauces ?? [];
+      const noSauce = item.noSauce === true;
 
       for (const extraId of extraIds) {
         if (!extraMap.has(extraId)) {
@@ -595,14 +599,20 @@ export class OrdersService {
       const maxSaucesTakeawayDelivery = 3;
 
       if (product.sauceMode === ProductSauceMode.NONE) {
-        if (requestedSauces.length > 0) {
+        if (requestedSauces.length > 0 || noSauce) {
           throw new BadRequestException(
             `El producto ${product.name} no permite salsas`,
           );
         }
+      } else if (noSauce) {
+        if (requestedSauces.length > 0) {
+          throw new BadRequestException(
+            `No puedes elegir salsas si marcaste sin salsa para ${product.name}`,
+          );
+        }
       } else if (saucesRequired && !requestedSauces.length) {
         throw new BadRequestException(
-          `Selecciona al menos una salsa para ${product.name}`,
+          `Selecciona al menos una salsa o marca sin salsa para ${product.name}`,
         );
       } else if (requestedSauces.length > 0) {
         if (
@@ -700,6 +710,7 @@ export class OrdersService {
         quantity: item.quantity,
         lineTotal,
         notes: item.notes,
+        noSauce,
         extras: selectedExtras,
         sauces: selectedSauces,
       });
@@ -796,6 +807,7 @@ export class OrdersService {
               quantity: item.quantity,
               lineTotal: item.lineTotal,
               notes: item.notes,
+              noSauce: item.noSauce,
               extras: item.extras.length
                 ? { create: item.extras }
                 : undefined,
@@ -1030,6 +1042,7 @@ export class OrdersService {
               quantity: item.quantity,
               lineTotal: item.lineTotal,
               notes: item.notes,
+              noSauce: item.noSauce,
               extras: item.extras.length
                 ? { create: item.extras }
                 : undefined,

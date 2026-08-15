@@ -11,6 +11,7 @@ import {
   MinLength,
   IsNumber,
   Max,
+  IsBoolean,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { OrderType, SaucePlacement } from '@prisma/client';
@@ -43,6 +44,10 @@ export class CreateOrderItemDto {
   @ValidateNested({ each: true })
   @Type(() => CreateOrderItemSauceDto)
   sauces?: CreateOrderItemSauceDto[];
+
+  @IsOptional()
+  @IsBoolean()
+  noSauce?: boolean;
 
   @IsOptional()
   @IsString()

@@ -32,6 +32,7 @@ export interface OrderItem {
   quantity: number;
   lineTotal: number;
   notes: string | null;
+  noSauce?: boolean;
   extras: OrderItemExtra[];
   sauces: OrderItemSauce[];
 }
@@ -108,6 +109,7 @@ export interface CreateOrderItemInput {
   quantity: number;
   extraIds?: string[];
   sauces?: CreateOrderItemSauceInput[];
+  noSauce?: boolean;
   notes?: string;
 }
 
