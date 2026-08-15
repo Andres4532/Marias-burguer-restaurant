@@ -117,7 +117,10 @@ export default function PedidoDetallePage() {
   };
 
   const handleCancel = async () => {
-    if (!confirm('¿Cancelar este pedido?')) return;
+    const message = order?.payment
+      ? '¿Cancelar este pedido aunque ya fue cobrado? El registro del cobro se mantiene; devolvé el dinero al cliente si corresponde.'
+      : '¿Cancelar este pedido?';
+    if (!confirm(message)) return;
     await handleStatusChange('CANCELADO');
   };
 
@@ -431,9 +434,9 @@ export default function PedidoDetallePage() {
                   </p>
                 )}
 
-              {isPaid && order.status !== 'CANCELADO' && (
+              {isPaid && order.status !== 'CANCELADO' && !userIsJefa && (
                 <p className="text-xs text-text-secondary">
-                  Los pedidos cobrados no se pueden cancelar desde el sistema.
+                  Los pedidos cobrados solo los puede cancelar la jefa.
                 </p>
               )}
 

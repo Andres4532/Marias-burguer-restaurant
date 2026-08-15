@@ -862,14 +862,16 @@ export class OrdersService {
     const order = await this.findOne(id);
 
     if (status === OrderStatus.CANCELADO) {
-      if (order.payment) {
+      if (order.payment && user.role !== UserRole.JEFA) {
         throw new BadRequestException(
           'No se puede cancelar un pedido que ya fue cobrado. Contacta a la jefa.',
         );
       }
 
       const cajeraCanCancel =
-        user.role === UserRole.CAJERA && order.status === OrderStatus.PENDIENTE;
+        user.role === UserRole.CAJERA &&
+        order.status === OrderStatus.PENDIENTE &&
+        !order.payment;
       const jefaCanCancel = user.role === UserRole.JEFA;
 
       if (!cajeraCanCancel && !jefaCanCancel) {
