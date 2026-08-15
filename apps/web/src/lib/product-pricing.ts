@@ -90,3 +90,23 @@ export function getCartBasePrice(product: {
 }): number {
   return product.effectivePrice ?? product.price;
 }
+
+export function resolveCartBasePrice(
+  product: {
+    price: number;
+    effectivePrice?: number;
+    hasPromotion?: boolean;
+  },
+  applyPromo = true,
+): number {
+  if (product.hasPromotion && !applyPromo) {
+    return product.price;
+  }
+  return getCartBasePrice(product);
+}
+
+export function productNeedsPromoChoice(product: {
+  hasPromotion?: boolean;
+}): boolean {
+  return !!product.hasPromotion;
+}

@@ -10,6 +10,7 @@ export function cartItemsToOrderInput(items: CartItem[]): CreateOrderItemInput[]
       ? item.sauces.map((s) => ({ sauceId: s.id, placement: s.placement }))
       : undefined,
     noSauce: item.noSauce ? true : undefined,
+    applyPromo: item.applyPromo === false ? false : undefined,
     notes: item.notes,
   }));
 }

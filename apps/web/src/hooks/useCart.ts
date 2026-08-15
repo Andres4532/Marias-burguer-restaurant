@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { getCartBasePrice } from '@/lib/product-pricing';
+import { resolveCartBasePrice } from '@/lib/product-pricing';
 import type { Order, OrderType } from '@/types/orders';
 import type { SaucePlacement } from '@/types/catalog';
 
@@ -26,6 +26,7 @@ export interface CartItem {
   extras: CartExtra[];
   sauces: CartSauce[];
   noSauce?: boolean;
+  applyPromo?: boolean;
   notes?: string;
 }
 
@@ -34,15 +35,17 @@ function itemKey(
   extraIds: string[],
   sauces: CartSauce[],
   noSauce = false,
+  applyPromo = true,
 ) {
+  const promoPart = applyPromo ? 'promo' : 'list';
   if (noSauce) {
-    return `${productId}:${extraIds.sort().join(',')}:__no_sauce__`;
+    return `${productId}:${extraIds.sort().join(',')}:__no_sauce__:${promoPart}`;
   }
   const saucePart = sauces
     .map((s) => `${s.id}:${s.placement}`)
     .sort()
     .join(',');
-  return `${productId}:${extraIds.sort().join(',')}:${saucePart}`;
+  return `${productId}:${extraIds.sort().join(',')}:${saucePart}:${promoPart}`;
 }
 
 function unitPrice(item: CartItem) {
@@ -69,17 +72,20 @@ export function useCart() {
         name: string;
         price: number;
         effectivePrice?: number;
+        hasPromotion?: boolean;
       },
       extras: CartExtra[],
       sauces: CartSauce[] = [],
       notes?: string,
       noSauce = false,
+      applyPromo = true,
     ) => {
       const key = itemKey(
         product.id,
         extras.map((e) => e.id),
         sauces,
         noSauce,
+        applyPromo,
       );
 
       setItems((prev) => {
@@ -95,11 +101,12 @@ export function useCart() {
             key,
             productId: product.id,
             productName: product.name,
-            basePrice: getCartBasePrice(product),
+            basePrice: resolveCartBasePrice(product, applyPromo),
             quantity: 1,
             extras,
             sauces,
             noSauce: noSauce || undefined,
+            applyPromo: applyPromo ? undefined : false,
             notes,
           },
         ];

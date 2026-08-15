@@ -110,6 +110,7 @@ export interface CreateOrderItemInput {
   extraIds?: string[];
   sauces?: CreateOrderItemSauceInput[];
   noSauce?: boolean;
+  applyPromo?: boolean;
   notes?: string;
 }
 

@@ -15,16 +15,16 @@ import { getCatalog, getErrorMessage } from '@/lib/catalog';
 import { ProductPrice } from '@/components/catalog/ProductPrice';
 import { createOrder } from '@/lib/orders';
 import { cartItemsToOrderInput } from '@/lib/cart-order';
+import { useProductAddModals } from '@/hooks/useProductAddModals';
 import {
   SaucePickerModal,
-  productNeedsSaucePicker,
 } from '@/components/pos/SaucePickerModal';
+import { PromoChoiceModal } from '@/components/pos/PromoChoiceModal';
 import {
   canAddOneToCart,
   isOutOfStock,
   maxQuantityForCartLine,
 } from '@/lib/inventory';
-import type { CartSauce } from '@/hooks/useCart';
 import type { CatalogCategory } from '@/types/catalog';
 import type { OrderType } from '@/types/orders';
 
@@ -45,8 +45,7 @@ export default function PosPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [cartOpen, setCartOpen] = useState(false);
-  const [saucePickerProduct, setSaucePickerProduct] =
-    useState<CatalogProduct | null>(null);
+  const productAdd = useProductAddModals(cart, cart.orderType);
 
   const loadCatalog = useCallback(async () => {
     setLoading(true);
@@ -92,17 +91,7 @@ export default function PosPage() {
       return;
     }
     setError('');
-    if (productNeedsSaucePicker(product, cart.orderType)) {
-      setSaucePickerProduct(product);
-      return;
-    }
-    cart.addItem(product, []);
-  };
-
-  const handleSauceConfirm = (sauces: CartSauce[], noSauce: boolean) => {
-    if (!saucePickerProduct) return;
-    cart.addItem(saucePickerProduct, [], sauces, undefined, noSauce);
-    setSaucePickerProduct(null);
+    productAdd.tryAddProduct(product);
   };
 
   const handleProductClick = (product: CatalogProduct) => {
@@ -353,12 +342,19 @@ export default function PosPage() {
         getMaxQuantity={getMaxQuantity}
       />
 
+      <PromoChoiceModal
+        open={!!productAdd.promoPickerProduct}
+        product={productAdd.promoPickerProduct}
+        onClose={() => productAdd.setPromoPickerProduct(null)}
+        onConfirm={productAdd.handlePromoConfirm}
+      />
+
       <SaucePickerModal
-        open={!!saucePickerProduct}
-        product={saucePickerProduct}
+        open={!!productAdd.saucePickerProduct}
+        product={productAdd.saucePickerProduct}
         orderType={cart.orderType}
-        onClose={() => setSaucePickerProduct(null)}
-        onConfirm={handleSauceConfirm}
+        onClose={() => productAdd.setSaucePickerProduct(null)}
+        onConfirm={productAdd.handleSauceConfirm}
       />
     </div>
   );

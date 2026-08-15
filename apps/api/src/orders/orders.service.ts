@@ -698,8 +698,17 @@ export class OrdersService {
       });
 
       const extrasTotal = selectedExtras.reduce((sum, e) => sum + e.price, 0);
-      const { effectivePrice } = getProductPromoPricing(product);
-      const unitPrice = effectivePrice + extrasTotal;
+      const pricing = getProductPromoPricing(product);
+      const applyPromo = item.applyPromo !== false;
+
+      if (!applyPromo && !pricing.hasPromotion) {
+        throw new BadRequestException(
+          `El producto ${product.name} no tiene promoción activa`,
+        );
+      }
+
+      const basePrice = applyPromo ? pricing.effectivePrice : pricing.listPrice;
+      const unitPrice = basePrice + extrasTotal;
       const lineTotal = unitPrice * item.quantity;
       subtotal += lineTotal;
 

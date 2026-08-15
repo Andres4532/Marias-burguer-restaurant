@@ -81,6 +81,11 @@ export function CartPanel({
                         </p>
                       ) : null;
                     })()}
+                    {item.applyPromo === false && (
+                      <p className="text-xs text-amber-700 mt-0.5 font-medium">
+                        Sin descuento (precio normal)
+                      </p>
+                    )}
                     <p className="text-xs text-text-secondary mt-0.5">
                       {formatPrice(unit)} c/u
                     </p>

@@ -19,11 +19,9 @@ import {
   formatOrderNumber,
 } from '@/lib/orders';
 import { cartItemsToOrderInput } from '@/lib/cart-order';
-import {
-  SaucePickerModal,
-  productNeedsSaucePicker,
-} from '@/components/pos/SaucePickerModal';
-import type { CartSauce } from '@/hooks/useCart';
+import { useProductAddModals } from '@/hooks/useProductAddModals';
+import { SaucePickerModal } from '@/components/pos/SaucePickerModal';
+import { PromoChoiceModal } from '@/components/pos/PromoChoiceModal';
 import {
   canAddOneToCart,
   isOutOfStock,
@@ -47,8 +45,7 @@ export default function EditarPedidoPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [cartOpen, setCartOpen] = useState(false);
-  const [saucePickerProduct, setSaucePickerProduct] =
-    useState<CatalogProduct | null>(null);
+  const productAdd = useProductAddModals(cart, 'MESA');
 
   const reservedByProduct = useMemo(() => {
     const map = new Map<string, number>();
@@ -134,17 +131,7 @@ export default function EditarPedidoPage() {
       return;
     }
     setError('');
-    if (productNeedsSaucePicker(product, 'MESA')) {
-      setSaucePickerProduct(adjusted);
-      return;
-    }
-    cart.addItem(adjusted, []);
-  };
-
-  const handleSauceConfirm = (sauces: CartSauce[], noSauce: boolean) => {
-    if (!saucePickerProduct) return;
-    cart.addItem(saucePickerProduct, [], sauces, undefined, noSauce);
-    setSaucePickerProduct(null);
+    productAdd.tryAddProduct(adjusted);
   };
 
   const handleSubmit = async () => {
@@ -342,12 +329,19 @@ export default function EditarPedidoPage() {
         submitLabel="Guardar cambios"
       />
 
+      <PromoChoiceModal
+        open={!!productAdd.promoPickerProduct}
+        product={productAdd.promoPickerProduct}
+        onClose={() => productAdd.setPromoPickerProduct(null)}
+        onConfirm={productAdd.handlePromoConfirm}
+      />
+
       <SaucePickerModal
-        open={!!saucePickerProduct}
-        product={saucePickerProduct}
+        open={!!productAdd.saucePickerProduct}
+        product={productAdd.saucePickerProduct}
         orderType="MESA"
-        onClose={() => setSaucePickerProduct(null)}
-        onConfirm={handleSauceConfirm}
+        onClose={() => productAdd.setSaucePickerProduct(null)}
+        onConfirm={productAdd.handleSauceConfirm}
       />
     </div>
   );

@@ -50,6 +50,10 @@ export class CreateOrderItemDto {
   noSauce?: boolean;
 
   @IsOptional()
+  @IsBoolean()
+  applyPromo?: boolean;
+
+  @IsOptional()
   @IsString()
   notes?: string;
 }
