@@ -5,24 +5,23 @@ function pxToMm(px: number): number {
 }
 
 export function measureTicketPageHeightMm(root: HTMLElement): number {
-  const copies = root.querySelectorAll('.kitchen-ticket-copy');
-  let maxPx = 0;
+  const heightPx = Math.max(root.scrollHeight, root.offsetHeight);
 
-  copies.forEach((copy) => {
-    const el = copy as HTMLElement;
-    maxPx = Math.max(maxPx, el.scrollHeight, el.offsetHeight);
-  });
-
-  if (maxPx === 0) {
+  if (heightPx === 0) {
     return 80;
   }
 
-  return Math.min(Math.max(pxToMm(maxPx) + 2, 40), 1200);
+  return Math.min(Math.max(pxToMm(heightPx) + 4, 40), 1200);
 }
 
-export function buildTicketPrintCss(pageHeightMm: number): string {
+export function buildTicketPrintCss(pageHeightMm?: number): string {
+  const pageSize =
+    pageHeightMm != null
+      ? `80mm ${pageHeightMm}mm`
+      : '80mm auto';
+
   return `
-  @page { size: 80mm ${pageHeightMm}mm; margin: 0; }
+  @page { size: ${pageSize}; margin: 0; }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -45,15 +44,20 @@ export function buildTicketPrintCss(pageHeightMm: number): string {
   .kitchen-ticket-copy {
     display: block;
     width: 100%;
-    page-break-after: always;
-    break-after: page;
-    page-break-inside: avoid;
-    break-inside: avoid;
   }
 
-  .kitchen-ticket-copy:last-child {
-    page-break-after: auto;
-    break-after: auto;
+  .ticket-copy-gap {
+    display: block;
+    padding: 8mm 0;
+    margin: 0;
+    text-align: center;
+  }
+
+  .ticket-cut-line {
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 11px;
+    font-weight: 900;
+    letter-spacing: 0.12em;
   }
 
   .kitchen-ticket {
@@ -67,8 +71,6 @@ export function buildTicketPrintCss(pageHeightMm: number): string {
     padding: 1mm;
     line-height: 1.35;
     overflow: visible;
-    page-break-inside: avoid;
-    break-inside: avoid;
   }
 
   .ticket-header {

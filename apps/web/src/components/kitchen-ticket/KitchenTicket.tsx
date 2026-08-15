@@ -156,9 +156,16 @@ export function KitchenTicket({ order, copyLabel = 'COCINA' }: KitchenTicketProp
 export function KitchenTicketPrintSet({ order }: { order: Order }) {
   return (
     <div id="kitchen-ticket-print-set" className="kitchen-ticket-print-set">
-      {TICKET_COPIES.map((copyLabel) => (
-        <div key={copyLabel} className="kitchen-ticket-copy">
-          <KitchenTicket order={order} copyLabel={copyLabel} />
+      {TICKET_COPIES.map((copyLabel, index) => (
+        <div key={copyLabel}>
+          <div className="kitchen-ticket-copy">
+            <KitchenTicket order={order} copyLabel={copyLabel} />
+          </div>
+          {index < TICKET_COPIES.length - 1 && (
+            <div className="ticket-copy-gap" aria-hidden="true">
+              <p className="ticket-cut-line">- - - - - - - - - -</p>
+            </div>
+          )}
         </div>
       ))}
     </div>
@@ -197,16 +204,18 @@ export function printKitchenTicket() {
   clone.removeAttribute('id');
   doc.body.appendChild(clone);
 
-  style.textContent = buildTicketPrintCss(300);
+  style.textContent = buildTicketPrintCss();
 
   window.requestAnimationFrame(() => {
-    const pageHeightMm = measureTicketPageHeightMm(clone);
-    style.textContent = buildTicketPrintCss(pageHeightMm);
+    window.requestAnimationFrame(() => {
+      const pageHeightMm = measureTicketPageHeightMm(clone);
+      style.textContent = buildTicketPrintCss(pageHeightMm);
 
-    window.setTimeout(() => {
-      win?.focus();
-      win?.print();
-      window.setTimeout(() => iframe.remove(), 2000);
-    }, 150);
+      window.setTimeout(() => {
+        win?.focus();
+        win?.print();
+        window.setTimeout(() => iframe.remove(), 2000);
+      }, 300);
+    });
   });
 }
