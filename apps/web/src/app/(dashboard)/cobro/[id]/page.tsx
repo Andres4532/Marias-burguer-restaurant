@@ -155,7 +155,8 @@ export default function CobroPage() {
             }
           : undefined,
       );
-      setOrder(result.order);
+      const refreshed = await getOrder(id);
+      setOrder(refreshed ?? result.order);
       setChange(result.change ?? result.order.payment?.changeAmount ?? null);
       setAmountReceivedPaid(
         result.amountReceived ?? result.order.payment?.amountReceived ?? null,

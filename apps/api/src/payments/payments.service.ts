@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { OrderStatus, PaymentMethod, PaymentStatus, OrderSource } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { OrdersService } from '../orders/orders.service';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { toNumber } from '../common/utils/decimal.util';
 
@@ -15,7 +16,10 @@ const ALLOWED_METHODS: PaymentMethod[] = [
 
 @Injectable()
 export class PaymentsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private ordersService: OrdersService,
+  ) {}
 
   async payOrder(orderId: string, dto: CreatePaymentDto, userId: string) {
     if (!ALLOWED_METHODS.includes(dto.method)) {
@@ -134,7 +138,7 @@ export class PaymentsService {
       payment: this.mapPaymentRecord(result.payment),
       change,
       amountReceived: dto.amountReceived,
-      order: this.mapOrderWithPayment(result.order),
+      order: await this.ordersService.findOne(orderId),
     };
   }
 
@@ -194,76 +198,4 @@ export class PaymentsService {
     };
   }
 
-  private mapOrderWithPayment(order: {
-    id: string;
-    orderNumber: number;
-    type: string;
-    status: OrderStatus;
-    tableNumber: string | null;
-    subtotal: { toString(): string };
-    total: { toString(): string };
-    notes: string | null;
-    createdAt: Date;
-    updatedAt: Date;
-    paidAt: Date | null;
-    createdBy?: { id: string; name: string } | null;
-    items: Array<{
-      id: string;
-      productId: string;
-      productName: string;
-      unitPrice: { toString(): string };
-      quantity: number;
-      lineTotal: { toString(): string };
-      notes: string | null;
-      extras: Array<{
-        id: string;
-        extraId: string;
-        extraName: string;
-        price: { toString(): string };
-      }>;
-    }>;
-    payments: Array<{
-      id: string;
-      method: PaymentMethod;
-      amount: { toString(): string };
-      amountReceived: { toString(): string } | null;
-      changeAmount: { toString(): string } | null;
-      paidAt: Date;
-      billingNit: string | null;
-      billingBusinessName: string | null;
-      billingComplement: string | null;
-    }>;
-  }) {
-    const payment = order.payments[0];
-    return {
-      id: order.id,
-      orderNumber: order.orderNumber,
-      type: order.type,
-      status: order.status,
-      tableNumber: order.tableNumber,
-      subtotal: toNumber(order.subtotal),
-      total: toNumber(order.total),
-      notes: order.notes,
-      createdAt: order.createdAt,
-      updatedAt: order.updatedAt,
-      paidAt: order.paidAt,
-      createdBy: order.createdBy,
-      payment: payment ? this.mapPaymentRecord(payment) : null,
-      items: order.items.map((item) => ({
-        id: item.id,
-        productId: item.productId,
-        productName: item.productName,
-        unitPrice: toNumber(item.unitPrice),
-        quantity: item.quantity,
-        lineTotal: toNumber(item.lineTotal),
-        notes: item.notes,
-        extras: item.extras.map((e) => ({
-          id: e.id,
-          extraId: e.extraId,
-          extraName: e.extraName,
-          price: toNumber(e.price),
-        })),
-      })),
-    };
-  }
 }

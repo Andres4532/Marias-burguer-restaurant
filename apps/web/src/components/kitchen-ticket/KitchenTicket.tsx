@@ -106,9 +106,9 @@ export function KitchenTicket({ order, copyLabel = 'COCINA' }: KitchenTicketProp
                 ))}
               </ul>
             )}
-            {item.sauces.length > 0 && (
+            {(item.sauces ?? []).length > 0 && (
               <ul className="ticket-extras">
-                {item.sauces.map((sauce) => (
+                {(item.sauces ?? []).map((sauce) => (
                   <li key={sauce.id}>
                     Salsa: {formatCartSauceLine(sauce.sauceName, sauce.placement)}
                   </li>
