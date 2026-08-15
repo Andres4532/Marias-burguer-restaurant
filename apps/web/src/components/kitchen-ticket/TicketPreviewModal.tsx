@@ -31,7 +31,8 @@ export function TicketPreviewModal({ order, open, onClose }: TicketPreviewModalP
         </div>
         <TicketPrintHint />
         <p className="text-xs text-gray-500 text-center">
-          2 tickets separados (Cocina, Caja). Copias: 1 en el diálogo.
+          2 tickets separados (Cocina y Caja). En la vista previa de impresión
+          verás 2 páginas. Copias: 1 en el diálogo.
         </p>
         <div className="flex gap-2">
           <Button

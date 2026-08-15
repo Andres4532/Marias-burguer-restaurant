@@ -5,8 +5,8 @@ import { formatCartSauceLine } from '@/lib/sauce-labels';
 import { ORDER_TYPE_LABELS, PAYMENT_METHOD_LABELS } from '@/types/orders';
 import { getGoogleMapsUrl, hasDeliveryCoordinates } from '@/lib/maps';
 import {
+  applyPerCopyPageHeights,
   buildTicketPrintCss,
-  measureTicketPageHeightMm,
 } from './ticket-print-styles';
 
 export const TICKET_COPIES = ['COCINA', 'CAJA'] as const;
@@ -156,16 +156,9 @@ export function KitchenTicket({ order, copyLabel = 'COCINA' }: KitchenTicketProp
 export function KitchenTicketPrintSet({ order }: { order: Order }) {
   return (
     <div id="kitchen-ticket-print-set" className="kitchen-ticket-print-set">
-      {TICKET_COPIES.map((copyLabel, index) => (
-        <div key={copyLabel}>
-          <div className="kitchen-ticket-copy">
-            <KitchenTicket order={order} copyLabel={copyLabel} />
-          </div>
-          {index < TICKET_COPIES.length - 1 && (
-            <div className="ticket-copy-gap" aria-hidden="true">
-              <p className="ticket-cut-line">- - - - - - - - - -</p>
-            </div>
-          )}
+      {TICKET_COPIES.map((copyLabel) => (
+        <div key={copyLabel} className="kitchen-ticket-copy">
+          <KitchenTicket order={order} copyLabel={copyLabel} />
         </div>
       ))}
     </div>
@@ -208,8 +201,7 @@ export function printKitchenTicket() {
 
   window.requestAnimationFrame(() => {
     window.requestAnimationFrame(() => {
-      const pageHeightMm = measureTicketPageHeightMm(clone);
-      style.textContent = buildTicketPrintCss(pageHeightMm);
+      applyPerCopyPageHeights(clone);
 
       window.setTimeout(() => {
         win?.focus();

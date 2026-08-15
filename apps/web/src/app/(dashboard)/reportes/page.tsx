@@ -271,7 +271,15 @@ export default function ReportesPage() {
             <StatCard
               label="Pedidos creados"
               value={String(report.orderCount)}
+              hint="Sin cancelados"
             />
+            {report.cancelledOrderCount > 0 && (
+              <StatCard
+                label="Cancelados"
+                value={String(report.cancelledOrderCount)}
+                hint="No suman en ventas"
+              />
+            )}
             <StatCard
               label="Pendientes de cobro"
               value={String(report.pendingOrderCount)}
@@ -394,11 +402,13 @@ export default function ReportesPage() {
 function StatCard({
   label,
   value,
+  hint,
   highlight,
   warning,
 }: {
   label: string;
   value: string;
+  hint?: string;
   highlight?: boolean;
   warning?: boolean;
 }) {
@@ -435,6 +445,15 @@ function StatCard({
       >
         {value}
       </p>
+      {hint && (
+        <p
+          className={`text-xs mt-1.5 font-medium ${
+            highlight ? 'text-white/70' : 'text-text-secondary'
+          }`}
+        >
+          {hint}
+        </p>
+      )}
     </Card>
   );
 }

@@ -75,7 +75,14 @@ export async function downloadReportPdf(
     bold: true,
   });
   y = writeLine(doc, `Pedidos cobrados: ${report.paidOrderCount}`, y);
-  y = writeLine(doc, `Pedidos creados: ${report.orderCount}`, y);
+  y = writeLine(doc, `Pedidos creados (sin cancelados): ${report.orderCount}`, y);
+  if (report.cancelledOrderCount > 0) {
+    y = writeLine(
+      doc,
+      `Pedidos cancelados (no suman en ventas): ${report.cancelledOrderCount}`,
+      y,
+    );
+  }
   y = writeLine(doc, `Pendientes de cobro: ${report.pendingOrderCount}`, y);
   y += 4;
 

@@ -12,6 +12,7 @@ export interface SalesReport {
   totalSales: number;
   paidOrderCount: number;
   orderCount: number;
+  cancelledOrderCount: number;
   pendingOrderCount: number;
   byMethod: Array<{
     method: PaymentMethod;
@@ -148,7 +149,10 @@ export function buildReportSummary(
     '',
     `Total vendido: ${formatPrice(report.totalSales)}`,
     `Pedidos cobrados: ${report.paidOrderCount}`,
-    `Pedidos creados: ${report.orderCount}`,
+    `Pedidos creados (sin cancelados): ${report.orderCount}`,
+    ...(report.cancelledOrderCount > 0
+      ? [`Pedidos cancelados (no suman en ventas): ${report.cancelledOrderCount}`]
+      : []),
     `Pendientes de cobro: ${report.pendingOrderCount}`,
     '',
     'Por método de pago:',

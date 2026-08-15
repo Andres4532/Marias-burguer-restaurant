@@ -2,7 +2,7 @@ import {
   Injectable,
   BadRequestException,
 } from '@nestjs/common';
-import { PaymentMethod, PaymentStatus } from '@prisma/client';
+import { PaymentMethod, PaymentStatus, OrderStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { toNumber } from '../common/utils/decimal.util';
 import { TimezoneService } from '../common/timezone/timezone.service';
@@ -65,10 +65,13 @@ export class ReportsService {
     const { start, end } = this.timezone.getRangeBounds(from, to);
     const tz = this.timezone.getTimezone();
 
+    const activeOrderFilter = { status: { not: OrderStatus.CANCELADO } };
+
     const payments = await this.prisma.payment.findMany({
       where: {
         status: PaymentStatus.PAGADO,
         paidAt: { gte: start, lte: end },
+        order: activeOrderFilter,
       },
       select: {
         method: true,
@@ -86,7 +89,17 @@ export class ReportsService {
     const paidOrderIds = new Set(payments.map((p) => p.orderId));
 
     const ordersInRange = await this.prisma.order.count({
-      where: { createdAt: { gte: start, lte: end } },
+      where: {
+        createdAt: { gte: start, lte: end },
+        ...activeOrderFilter,
+      },
+    });
+
+    const cancelledOrderCount = await this.prisma.order.count({
+      where: {
+        createdAt: { gte: start, lte: end },
+        status: OrderStatus.CANCELADO,
+      },
     });
 
     const byMethod = (
@@ -141,6 +154,7 @@ export class ReportsService {
     const orderItems = await this.prisma.orderItem.findMany({
       where: {
         order: {
+          ...activeOrderFilter,
           payments: {
             some: {
               status: PaymentStatus.PAGADO,
@@ -198,6 +212,7 @@ export class ReportsService {
       totalSales: Math.round(totalSales * 100) / 100,
       paidOrderCount: paidOrderIds.size,
       orderCount: ordersInRange,
+      cancelledOrderCount,
       pendingOrderCount: pendingOrders,
       byMethod,
       dailySeries: granularity === 'day' ? series : [],
