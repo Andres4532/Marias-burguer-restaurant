@@ -45,6 +45,7 @@ export const payOrder = (
   method: PaymentMethod,
   amountReceived?: number,
   billing?: PayOrderBillingInput,
+  chargeAmount?: number,
 ) =>
   apiFetch<PayOrderResponse>(
     `/orders/${id}/payments`,
@@ -55,6 +56,7 @@ export const payOrder = (
         ...(method === 'EFECTIVO' && amountReceived != null
           ? { amountReceived }
           : {}),
+        ...(chargeAmount != null ? { chargeAmount } : {}),
         ...(billing?.billingNit?.trim()
           ? {
               billingNit: billing.billingNit.trim(),

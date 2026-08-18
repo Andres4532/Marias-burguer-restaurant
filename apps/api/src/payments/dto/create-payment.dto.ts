@@ -25,6 +25,12 @@ export class CreatePaymentDto {
   @Min(0.01)
   amountReceived?: number;
 
+  /** Total final a cobrar (descuento manual en caja). Debe ser ≤ total del pedido. */
+  @IsOptional()
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0.01)
+  chargeAmount?: number;
+
   @IsOptional()
   @IsString()
   @MaxLength(20)

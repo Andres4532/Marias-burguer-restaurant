@@ -68,6 +68,8 @@ export default function CobroPage() {
   const [billingNit, setBillingNit] = useState('');
   const [billingBusinessName, setBillingBusinessName] = useState('');
   const [billingComplement, setBillingComplement] = useState('');
+  const [wantsCheckoutDiscount, setWantsCheckoutDiscount] = useState(false);
+  const [checkoutChargeAmount, setCheckoutChargeAmount] = useState('');
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -95,9 +97,28 @@ export default function CobroPage() {
     load();
   }, [load]);
 
+  const originalTotal = order?.total ?? 0;
+
+  const chargeTotal = useMemo(() => {
+    if (!order) return 0;
+    if (!wantsCheckoutDiscount) return order.total;
+    const parsed = parseCashAmount(checkoutChargeAmount);
+    if (parsed == null || parsed <= 0) return null;
+    return Math.round(parsed * 100) / 100;
+  }, [order, wantsCheckoutDiscount, checkoutChargeAmount]);
+
+  const checkoutDiscount = useMemo(() => {
+    if (chargeTotal == null || chargeTotal >= originalTotal) return 0;
+    return Math.round((originalTotal - chargeTotal) * 100) / 100;
+  }, [chargeTotal, originalTotal]);
+
+  const chargeAmountInvalid =
+    wantsCheckoutDiscount &&
+    (chargeTotal == null || chargeTotal > originalTotal);
+
   const cashSuggestions = useMemo(
-    () => (order ? suggestCashAmounts(order.total) : []),
-    [order],
+    () => (chargeTotal != null ? suggestCashAmounts(chargeTotal) : []),
+    [chargeTotal],
   );
 
   const cashReceived = useMemo(
@@ -106,28 +127,43 @@ export default function CobroPage() {
   );
 
   const computedChange = useMemo(() => {
-    if (method !== 'EFECTIVO' || !order || cashReceived == null) return null;
-    return Math.round((cashReceived - order.total) * 100) / 100;
-  }, [method, cashReceived, order]);
+    if (method !== 'EFECTIVO' || chargeTotal == null || cashReceived == null) {
+      return null;
+    }
+    return Math.round((cashReceived - chargeTotal) * 100) / 100;
+  }, [method, cashReceived, chargeTotal]);
 
   const cashIsValid =
     method !== 'EFECTIVO' ||
-    (cashReceived != null && cashReceived >= (order?.total ?? 0));
+    (cashReceived != null &&
+      chargeTotal != null &&
+      cashReceived >= chargeTotal);
 
   const cashIsInsufficient =
     method === 'EFECTIVO' &&
     cashReceived != null &&
-    order != null &&
-    cashReceived < order.total;
+    chargeTotal != null &&
+    cashReceived < chargeTotal;
 
   const handlePay = async () => {
     setError('');
 
     if (method === 'EFECTIVO') {
-      if (cashReceived == null || cashReceived < (order?.total ?? 0)) {
+      if (
+        cashReceived == null ||
+        chargeTotal == null ||
+        cashReceived < chargeTotal
+      ) {
         setError('El monto recibido debe ser mayor o igual al total');
         return;
       }
+    }
+
+    if (chargeAmountInvalid) {
+      setError(
+        `El total a cobrar debe ser mayor a 0 y no mayor a ${formatPrice(originalTotal)}`,
+      );
+      return;
     }
 
     if (wantsBilling) {
@@ -153,6 +189,9 @@ export default function CobroPage() {
               billingBusinessName,
               billingComplement,
             }
+          : undefined,
+        wantsCheckoutDiscount && chargeTotal != null
+          ? chargeTotal
           : undefined,
       );
       const refreshed = await getOrder(id);
@@ -281,9 +320,25 @@ export default function CobroPage() {
               <span className="text-lg font-extrabold text-foreground">
                 Total a cobrar
               </span>
-              <span className="text-3xl font-extrabold text-primary">
-                {formatPrice(order.total)}
-              </span>
+              <div className="text-right">
+                {wantsCheckoutDiscount && checkoutDiscount > 0 && (
+                  <p className="text-sm text-text-secondary line-through">
+                    {formatPrice(originalTotal)}
+                  </p>
+                )}
+                <span className="text-3xl font-extrabold text-primary">
+                  {formatPrice(
+                    wantsCheckoutDiscount && chargeTotal != null
+                      ? chargeTotal
+                      : order.total,
+                  )}
+                </span>
+                {wantsCheckoutDiscount && checkoutDiscount > 0 && (
+                  <p className="text-xs font-bold text-amber-700 mt-1">
+                    Descuento: {formatPrice(checkoutDiscount)}
+                  </p>
+                )}
+              </div>
             </div>
           </Card>
 
@@ -298,6 +353,12 @@ export default function CobroPage() {
                     <p className="text-green-300 text-sm mt-2 font-medium">
                       {PAYMENT_METHOD_LABELS[order.payment.method]} ·{' '}
                       {formatPrice(order.payment.amount)}
+                    </p>
+                  )}
+                  {order.subtotal > order.total && (
+                    <p className="text-amber-700 text-xs mt-2 font-medium">
+                      Total original {formatPrice(order.subtotal)} · Descuento{' '}
+                      {formatPrice(order.subtotal - order.total)}
                     </p>
                   )}
                   {order.payment?.method === 'EFECTIVO' &&
@@ -396,6 +457,68 @@ export default function CobroPage() {
               </div>
             ) : (
               <div className="space-y-5">
+                <div className="rounded-xl border border-border bg-background/50 p-4 space-y-3">
+                  <label className="flex cursor-pointer items-start gap-2.5">
+                    <input
+                      type="checkbox"
+                      checked={wantsCheckoutDiscount}
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        setWantsCheckoutDiscount(checked);
+                        if (checked) {
+                          setCheckoutChargeAmount(String(order.total));
+                          setAmountReceived(String(order.total));
+                        } else {
+                          setCheckoutChargeAmount('');
+                          setAmountReceived(String(order.total));
+                        }
+                        setError('');
+                      }}
+                      className="mt-0.5 size-4 shrink-0 rounded border-border text-primary focus:ring-primary/30"
+                    />
+                    <span>
+                      <span className="block text-sm font-semibold text-foreground">
+                        Aplicar descuento al cobro
+                      </span>
+                      <span className="mt-0.5 block text-xs text-text-secondary">
+                        Indica el total final que pagará el cliente.
+                      </span>
+                    </span>
+                  </label>
+
+                  {wantsCheckoutDiscount && (
+                    <div className="space-y-2 border-t border-border pt-3">
+                      <Input
+                        label="Total a cobrar (Bs.)"
+                        type="number"
+                        min={0.01}
+                        max={originalTotal}
+                        step="0.5"
+                        inputMode="decimal"
+                        value={checkoutChargeAmount}
+                        onChange={(e) => {
+                          setCheckoutChargeAmount(e.target.value);
+                          setError('');
+                        }}
+                      />
+                      <p className="text-xs text-text-secondary">
+                        Máximo: {formatPrice(originalTotal)} (total del pedido)
+                      </p>
+                      {chargeAmountInvalid && (
+                        <p className="text-sm text-red-300 bg-red-950/40 border border-red-800/50 px-3 py-2 rounded-xl font-medium">
+                          Ingresa un monto válido entre 0.01 y{' '}
+                          {formatPrice(originalTotal)}
+                        </p>
+                      )}
+                      {checkoutDiscount > 0 && !chargeAmountInvalid && (
+                        <p className="text-sm text-amber-800 bg-amber-50 border border-amber-200 px-3 py-2 rounded-xl font-medium">
+                          Descuento aplicado: {formatPrice(checkoutDiscount)}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+
                 <div>
                   <h3 className="font-extrabold text-foreground mb-3">
                     Método de pago
@@ -424,7 +547,7 @@ export default function CobroPage() {
                     <Input
                       label="Monto recibido (Bs.)"
                       type="number"
-                      min={order.total}
+                      min={chargeTotal ?? 0}
                       step="0.5"
                       inputMode="decimal"
                       value={amountReceived}
@@ -449,14 +572,14 @@ export default function CobroPage() {
                       </div>
                     </div>
 
-                    {cashIsInsufficient && (
+                    {cashIsInsufficient && chargeTotal != null && (
                       <p className="text-sm text-red-300 bg-red-950/40 border border-red-800/50 px-3 py-2 rounded-xl font-medium">
-                        Falta {formatPrice(order.total - (cashReceived ?? 0))} para
-                        completar el cobro
+                        Falta {formatPrice(chargeTotal - (cashReceived ?? 0))}{' '}
+                        para completar el cobro
                       </p>
                     )}
 
-                    {cashIsValid && computedChange != null && (
+                    {cashIsValid && computedChange != null && chargeTotal != null && (
                       <Card
                         padding="sm"
                         className={
@@ -469,7 +592,7 @@ export default function CobroPage() {
                           <div>
                             <p className="text-text-secondary font-bold">Total</p>
                             <p className="font-extrabold text-foreground mt-1">
-                              {formatPrice(order.total)}
+                              {formatPrice(chargeTotal)}
                             </p>
                           </div>
                           <div>
@@ -561,7 +684,9 @@ export default function CobroPage() {
 
                 <Button
                   onClick={handlePay}
-                  disabled={paying || !cashIsValid}
+                  disabled={
+                    paying || !cashIsValid || chargeAmountInvalid || chargeTotal == null
+                  }
                   size="lg"
                   className="w-full"
                 >
@@ -570,9 +695,10 @@ export default function CobroPage() {
                     : method === 'EFECTIVO' &&
                         cashIsValid &&
                         computedChange != null &&
-                        computedChange > 0
+                        computedChange > 0 &&
+                        chargeTotal != null
                       ? `Confirmar cobro · Vuelto ${formatPrice(computedChange)}`
-                      : `Confirmar cobro · ${formatPrice(order.total)}`}
+                      : `Confirmar cobro · ${formatPrice(chargeTotal ?? order.total)}`}
                 </Button>
               </div>
             )}

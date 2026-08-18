@@ -68,6 +68,18 @@ export class PaymentsService {
     }
 
     const orderTotal = toNumber(order.total);
+    const chargeTotal =
+      dto.chargeAmount != null
+        ? Math.round(dto.chargeAmount * 100) / 100
+        : orderTotal;
+
+    if (dto.chargeAmount != null) {
+      if (chargeTotal > orderTotal) {
+        throw new BadRequestException(
+          `El total a cobrar no puede ser mayor a Bs. ${orderTotal.toFixed(2)}`,
+        );
+      }
+    }
 
     if (dto.method === PaymentMethod.EFECTIVO) {
       if (dto.amountReceived == null) {
@@ -75,16 +87,16 @@ export class PaymentsService {
           'Ingrese el monto recibido en efectivo',
         );
       }
-      if (dto.amountReceived < orderTotal) {
+      if (dto.amountReceived < chargeTotal) {
         throw new BadRequestException(
-          `Monto insuficiente. Total: Bs. ${orderTotal.toFixed(2)}`,
+          `Monto insuficiente. Total: Bs. ${chargeTotal.toFixed(2)}`,
         );
       }
     }
 
     const change =
       dto.method === PaymentMethod.EFECTIVO && dto.amountReceived != null
-        ? Math.round((dto.amountReceived - orderTotal) * 100) / 100
+        ? Math.round((dto.amountReceived - chargeTotal) * 100) / 100
         : undefined;
 
     const amountReceived =
@@ -99,7 +111,7 @@ export class PaymentsService {
         data: {
           orderId,
           method: dto.method,
-          amount: order.total,
+          amount: chargeTotal,
           amountReceived:
             amountReceived != null ? amountReceived : undefined,
           changeAmount: change != null ? change : undefined,
@@ -123,6 +135,7 @@ export class PaymentsService {
         data: {
           status: nextStatus,
           paidAt: now,
+          total: chargeTotal,
         },
         include: {
           createdBy: { select: { id: true, name: true } },
