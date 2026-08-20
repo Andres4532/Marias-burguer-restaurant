@@ -19,11 +19,22 @@ export function normalizeWhatsAppPhone(phone: string): string | null {
   return digits;
 }
 
+function prefersWhatsAppWeb(): boolean {
+  if (typeof navigator === 'undefined') return true;
+  return !/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+}
+
 function buildWhatsAppUrl(phone: string, message: string): string | null {
   const normalized = normalizeWhatsAppPhone(phone);
   if (!normalized) return null;
 
-  return `https://wa.me/${normalized}?text=${encodeURIComponent(message)}`;
+  const text = encodeURIComponent(message);
+
+  if (prefersWhatsAppWeb()) {
+    return `https://web.whatsapp.com/send?phone=${normalized}&text=${text}`;
+  }
+
+  return `https://wa.me/${normalized}?text=${text}`;
 }
 
 export function buildCustomerWhatsAppUrl(
@@ -54,9 +65,12 @@ export function buildCustomerCookingWhatsAppUrl(
   );
 }
 
+const WHATSAPP_WINDOW_NAME = 'whatsapp_notify';
+
 export function openCustomerWhatsApp(url: string) {
   if (!url) return;
-  window.open(url, '_blank', 'noopener,noreferrer');
+  const win = window.open(url, WHATSAPP_WINDOW_NAME);
+  win?.focus();
 }
 
 export function notifyCustomerByWhatsApp(
