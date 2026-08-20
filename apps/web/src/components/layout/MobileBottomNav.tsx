@@ -6,6 +6,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useEntrantesAlerts } from '@/components/entrantes/EntrantesAlertsProvider';
 import { NavIcon } from './NavIcon';
 import {
+  getNavAlertClass,
   getNavBadgeCount,
   NavNotificationBadge,
 } from './NavNotificationBadge';
@@ -33,13 +34,18 @@ export function MobileBottomNav() {
             newOrderCount,
             deliveryNewCount,
           );
+          const alertClass = getNavAlertClass(
+            tab.href,
+            newOrderCount,
+            deliveryNewCount,
+          );
           return (
             <Link
               key={tab.href}
               href={tab.href}
-              className={`relative flex flex-col items-center justify-center flex-1 h-full gap-0.5 transition ${
+              className={`relative flex flex-col items-center justify-center flex-1 h-full gap-0.5 transition rounded-xl mx-0.5 ${
                 active ? 'text-primary' : 'text-text-secondary'
-              }`}
+              } ${alertClass}`}
             >
               <span className="relative">
                 <NavIcon
@@ -50,6 +56,7 @@ export function MobileBottomNav() {
                   <NavNotificationBadge
                     count={badgeCount}
                     size="sm"
+                    pulse
                     className="absolute -top-1.5 -right-2.5 ring-2 ring-card"
                   />
                 )}
@@ -81,6 +88,11 @@ export function JefaTabletNav() {
           newOrderCount,
           deliveryNewCount,
         );
+        const alertClass = getNavAlertClass(
+          item.href,
+          newOrderCount,
+          deliveryNewCount,
+        );
         return (
           <Link
             key={item.href}
@@ -89,7 +101,7 @@ export function JefaTabletNav() {
               active
                 ? 'bg-primary/10 text-primary'
                 : 'text-text-secondary hover:bg-white/[0.06]'
-            }`}
+            } ${!active ? alertClass : ''}`}
           >
             <span className="relative">
               <NavIcon icon={item.icon} className="size-4 shrink-0" />
@@ -97,6 +109,7 @@ export function JefaTabletNav() {
                 <NavNotificationBadge
                   count={badgeCount}
                   size="sm"
+                  pulse
                   className="absolute -top-1.5 -right-2 ring-2 ring-background"
                 />
               )}

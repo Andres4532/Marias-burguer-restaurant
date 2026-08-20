@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useEntrantesAlerts } from '@/components/entrantes/EntrantesAlertsProvider';
 import { NavIcon } from './NavIcon';
 import {
+  getNavAlertClass,
   getNavBadgeCount,
   NavNotificationBadge,
 } from './NavNotificationBadge';
@@ -94,6 +95,11 @@ function NavGroup({
             recojoCount,
             deliveryCount,
           );
+          const alertClass = getNavAlertClass(
+            item.href,
+            recojoCount,
+            deliveryCount,
+          );
           return (
             <Link
               key={item.href}
@@ -102,7 +108,7 @@ function NavGroup({
                 active
                   ? 'bg-primary text-white shadow-sm shadow-primary/20'
                   : 'text-text-secondary hover:bg-white/[0.06] hover:text-foreground'
-              }`}
+              } ${!active ? alertClass : ''}`}
             >
               <span className="relative shrink-0">
                 <NavIcon icon={item.icon} className="size-5" />
@@ -110,6 +116,7 @@ function NavGroup({
                   <NavNotificationBadge
                     count={badgeCount}
                     size="sm"
+                    pulse
                     className="absolute -top-1.5 -right-2 ring-2 ring-card"
                   />
                 )}

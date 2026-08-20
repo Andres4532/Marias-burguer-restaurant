@@ -30,7 +30,7 @@ export function EntrantesAlertsBar() {
       {deliveryNewCount > 0 && (
         <Link
           href="/delivery"
-          className="text-xs font-bold text-indigo-700 bg-indigo-100 px-2.5 py-1 rounded-full hover:bg-indigo-200/80 transition"
+          className="text-xs font-bold text-indigo-200 bg-indigo-500/20 px-2.5 py-1 rounded-full hover:bg-indigo-500/30 transition nav-item-alert--delivery"
         >
           {deliveryNewCount} delivery nuevo(s) →
         </Link>
@@ -39,7 +39,7 @@ export function EntrantesAlertsBar() {
       {newOrderCount > 0 && (
         <Link
           href="/entrantes"
-          className="text-xs font-bold text-primary bg-primary/10 px-2.5 py-1 rounded-full hover:bg-primary/15 transition"
+          className="text-xs font-bold text-orange-100 bg-primary/20 px-2.5 py-1 rounded-full hover:bg-primary/30 transition nav-item-alert--recojo"
         >
           {newOrderCount} recojo(s) nuevo(s) →
         </Link>

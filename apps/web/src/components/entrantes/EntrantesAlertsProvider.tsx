@@ -117,6 +117,7 @@ export function EntrantesAlertsProvider({
               showNewOrderNotification(
                 event.order.orderNumber,
                 event.order.customerName ?? undefined,
+                event.order.type === 'DELIVERY' ? 'DELIVERY' : 'PARA_LLEVAR',
               );
 
               if (event.order.type === 'DELIVERY') {

@@ -62,19 +62,21 @@ export async function requestNotificationPermission(): Promise<boolean> {
 export function showNewOrderNotification(
   orderNumber: number,
   customerName?: string,
+  orderType: 'DELIVERY' | 'PARA_LLEVAR' = 'PARA_LLEVAR',
 ) {
   if (!('Notification' in window) || Notification.permission !== 'granted') {
     return;
   }
 
   const label = `#${String(orderNumber).padStart(3, '0')}`;
+  const typeLabel = orderType === 'DELIVERY' ? 'Delivery' : 'Recojo';
   const body = customerName
-    ? `${customerName} — menú público`
-    : 'Nuevo pedido del menú público';
+    ? `${customerName} — menú app`
+    : `Nuevo pedido ${typeLabel.toLowerCase()} del menú app`;
 
-  new Notification(`Pedido entrante ${label}`, {
+  new Notification(`${typeLabel} ${label}`, {
     body,
     icon: '/icons/icon-192.svg',
-    tag: `entrante-${orderNumber}`,
+    tag: `entrante-${orderType}-${orderNumber}`,
   });
 }

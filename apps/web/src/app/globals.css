@@ -276,3 +276,49 @@ body {
     size: 80mm auto;
   }
 }
+
+@keyframes nav-alert-blink-recojo {
+  0%,
+  100% {
+    background-color: rgb(249 115 22 / 0.1);
+    box-shadow: 0 0 0 0 rgb(249 115 22 / 0.15);
+  }
+  50% {
+    background-color: rgb(249 115 22 / 0.28);
+    box-shadow: 0 0 0 3px rgb(249 115 22 / 0.2);
+  }
+}
+
+@keyframes nav-alert-blink-delivery {
+  0%,
+  100% {
+    background-color: rgb(99 102 241 / 0.12);
+    box-shadow: 0 0 0 0 rgb(99 102 241 / 0.15);
+  }
+  50% {
+    background-color: rgb(99 102 241 / 0.3);
+    box-shadow: 0 0 0 3px rgb(99 102 241 / 0.22);
+  }
+}
+
+@keyframes nav-badge-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.15);
+  }
+}
+
+.nav-item-alert--recojo {
+  animation: nav-alert-blink-recojo 1s ease-in-out infinite;
+}
+
+.nav-item-alert--delivery {
+  animation: nav-alert-blink-delivery 1s ease-in-out infinite;
+}
+
+.nav-badge-alert {
+  animation: nav-badge-pulse 1s ease-in-out infinite;
+}

@@ -51,6 +51,7 @@ export const cajeraNavItems: NavItem[] = [
   { href: '/dashboard', label: 'Inicio', icon: 'home' },
   { href: '/mesas', label: 'Mesas', icon: 'mesas' },
   { href: '/delivery', label: 'Delivery', icon: 'delivery' },
+  { href: '/entrantes', label: 'Recojo', icon: 'entrantes' },
   { href: '/pos', label: 'POS', icon: 'pos' },
   { href: '/pedidos', label: 'Pedidos', icon: 'pedidos' },
 ];

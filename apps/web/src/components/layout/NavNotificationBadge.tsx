@@ -10,14 +10,30 @@ export function getNavBadgeCount(
   return 0;
 }
 
+export function getNavAlertClass(
+  href: string,
+  recojoCount: number,
+  deliveryCount: number,
+): string {
+  if (href === '/entrantes' && recojoCount > 0) {
+    return 'nav-item-alert--recojo';
+  }
+  if (href === '/delivery' && deliveryCount > 0) {
+    return 'nav-item-alert--delivery';
+  }
+  return '';
+}
+
 export function NavNotificationBadge({
   count,
   className = '',
   size = 'md',
+  pulse = false,
 }: {
   count: number;
   className?: string;
   size?: 'sm' | 'md';
+  pulse?: boolean;
 }) {
   if (count <= 0) return null;
 
@@ -29,7 +45,9 @@ export function NavNotificationBadge({
 
   return (
     <span
-      className={`inline-flex items-center justify-center rounded-full bg-red-500 font-extrabold leading-none text-white shadow-sm ${sizeClass} ${className}`}
+      className={`inline-flex items-center justify-center rounded-full bg-red-500 font-extrabold leading-none text-white shadow-sm ${sizeClass} ${
+        pulse ? 'nav-badge-alert' : ''
+      } ${className}`}
       aria-label={`${label} pedido(s) nuevo(s)`}
     >
       {label}
