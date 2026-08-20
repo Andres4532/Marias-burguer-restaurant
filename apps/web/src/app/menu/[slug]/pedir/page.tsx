@@ -22,10 +22,8 @@ import { normalizeMediaUrl } from '@/lib/media-url';
 import { downloadMediaFile } from '@/lib/download-media';
 import { DeliveryFormFields } from '@/components/orders/DeliveryFormFields';
 import { isDeliveryLocationComplete } from '@/lib/maps';
-import { ProductImage } from '@/components/ui/ProductImage';
 import { RestaurantLogo } from '@/components/layout/RestaurantLogo';
 import { formatPrice } from '@/lib/catalog';
-import { ProductPrice } from '@/components/catalog/ProductPrice';
 import {
   canAddOneToCart,
   isOutOfStock,
@@ -35,8 +33,7 @@ import { cartItemsToOrderInput } from '@/lib/cart-order';
 import { useProductAddModals } from '@/hooks/useProductAddModals';
 import { SaucePickerModal } from '@/components/pos/SaucePickerModal';
 import { PromoChoiceModal } from '@/components/pos/PromoChoiceModal';
-import { MenuProductDetailModal } from '@/components/menu/MenuProductDetailModal';
-import { ProductDescription } from '@/components/catalog/ProductDescription';
+import { MenuProductCard } from '@/components/menu/MenuProductCard';
 import type { CatalogCategory } from '@/types/catalog';
 import { ORDER_TYPE_LABELS, PAYMENT_METHOD_LABELS, type PaymentMethod } from '@/types/orders';
 
@@ -78,7 +75,6 @@ export default function PublicMenuOrderPage() {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('EFECTIVO');
   const [proofFile, setProofFile] = useState<File | null>(null);
   const [downloadingQr, setDownloadingQr] = useState(false);
-  const [detailProduct, setDetailProduct] = useState<CatalogProduct | null>(null);
   const productAdd = useProductAddModals(cart, orderType ?? 'PARA_LLEVAR');
 
   useEffect(() => {
@@ -135,12 +131,7 @@ export default function PublicMenuOrderPage() {
     [productById, cart.items],
   );
 
-  const handleProductClick = (product: CatalogProduct) => {
-    setError('');
-    setDetailProduct(product);
-  };
-
-  const handleDetailAdd = (product: CatalogProduct) => {
+  const handleProductAdd = (product: CatalogProduct) => {
     if (isOutOfStock(product)) {
       setError(`"${product.name}" no está disponible por ahora`);
       return;
@@ -149,7 +140,7 @@ export default function PublicMenuOrderPage() {
       setError(`No puedes agregar más unidades de "${product.name}"`);
       return;
     }
-    setDetailProduct(null);
+    setError('');
     productAdd.tryAddProduct(product);
   };
 
@@ -403,58 +394,13 @@ export default function PublicMenuOrderPage() {
               </Card>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 items-stretch">
-                {currentCategory?.products.map((product) => {
-                  const out = isOutOfStock(product);
-                  return (
-                    <button
-                      key={product.id}
-                      type="button"
-                      onClick={() => handleProductClick(product)}
-                      className={`flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-card text-left shadow-sm transition ${
-                        out
-                          ? 'opacity-50'
-                          : 'hover:border-primary/25 hover:shadow-md active:scale-[0.98]'
-                      }`}
-                    >
-                      <ProductImage
-                        src={product.imageUrl}
-                        alt={product.name}
-                        aspect="menu"
-                        className="w-full shrink-0 rounded-none"
-                      />
-                      <div className="flex flex-1 flex-col p-3">
-                        <p className="font-bold text-foreground text-sm leading-tight">
-                          {product.name}
-                        </p>
-                        {product.description && (
-                          <>
-                            <ProductDescription
-                              description={product.description}
-                              className="text-xs mt-1 line-clamp-2"
-                            />
-                            <p className="text-[10px] font-bold text-primary mt-1">
-                              Ver descripción completa
-                            </p>
-                          </>
-                        )}
-                        <div className="mt-auto pt-2">
-                          <ProductPrice
-                            price={product.price}
-                            effectivePrice={product.effectivePrice}
-                            hasPromotion={product.hasPromotion}
-                            promoLabel={product.promoLabel}
-                            showBadge
-                          />
-                        </div>
-                        {out && (
-                          <p className="text-[10px] font-bold text-red-400 mt-2">
-                            Agotado
-                          </p>
-                        )}
-                      </div>
-                    </button>
-                  );
-                })}
+                {currentCategory?.products.map((product) => (
+                  <MenuProductCard
+                    key={product.id}
+                    product={product}
+                    onAdd={handleProductAdd}
+                  />
+                ))}
               </div>
             )}
           </div>
@@ -676,13 +622,6 @@ export default function PublicMenuOrderPage() {
         header={customerFields}
         wide
         getMaxQuantity={getMaxQuantity}
-      />
-
-      <MenuProductDetailModal
-        open={!!detailProduct}
-        product={detailProduct}
-        onClose={() => setDetailProduct(null)}
-        onAdd={handleDetailAdd}
       />
 
       <PromoChoiceModal
