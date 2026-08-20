@@ -22,8 +22,11 @@ import { normalizeMediaUrl } from '@/lib/media-url';
 import { downloadMediaFile } from '@/lib/download-media';
 import { DeliveryFormFields } from '@/components/orders/DeliveryFormFields';
 import { isDeliveryLocationComplete } from '@/lib/maps';
+import { ProductImage } from '@/components/ui/ProductImage';
 import { RestaurantLogo } from '@/components/layout/RestaurantLogo';
 import { formatPrice } from '@/lib/catalog';
+import { ProductPrice } from '@/components/catalog/ProductPrice';
+import { ProductDescription } from '@/components/catalog/ProductDescription';
 import {
   canAddOneToCart,
   isOutOfStock,
@@ -33,7 +36,6 @@ import { cartItemsToOrderInput } from '@/lib/cart-order';
 import { useProductAddModals } from '@/hooks/useProductAddModals';
 import { SaucePickerModal } from '@/components/pos/SaucePickerModal';
 import { PromoChoiceModal } from '@/components/pos/PromoChoiceModal';
-import { MenuProductCard } from '@/components/menu/MenuProductCard';
 import type { CatalogCategory } from '@/types/catalog';
 import { ORDER_TYPE_LABELS, PAYMENT_METHOD_LABELS, type PaymentMethod } from '@/types/orders';
 
@@ -131,7 +133,7 @@ export default function PublicMenuOrderPage() {
     [productById, cart.items],
   );
 
-  const handleProductAdd = (product: CatalogProduct) => {
+  const handleProductClick = (product: CatalogProduct) => {
     if (isOutOfStock(product)) {
       setError(`"${product.name}" no está disponible por ahora`);
       return;
@@ -394,13 +396,62 @@ export default function PublicMenuOrderPage() {
               </Card>
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 items-stretch">
-                {currentCategory?.products.map((product) => (
-                  <MenuProductCard
-                    key={product.id}
-                    product={product}
-                    onAdd={handleProductAdd}
-                  />
-                ))}
+                {currentCategory?.products.map((product) => {
+                  const out = isOutOfStock(product);
+                  return (
+                    <div
+                      key={product.id}
+                      className={`flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-card text-left shadow-sm transition ${
+                        out ? 'opacity-50' : 'hover:border-primary/25 hover:shadow-md'
+                      }`}
+                    >
+                      <button
+                        type="button"
+                        disabled={out}
+                        onClick={() => handleProductClick(product)}
+                        className={`flex flex-col text-left ${
+                          out ? 'cursor-not-allowed' : 'active:scale-[0.98]'
+                        }`}
+                      >
+                        <ProductImage
+                          src={product.imageUrl}
+                          alt={product.name}
+                          aspect="menu"
+                          className="w-full shrink-0 rounded-none"
+                        />
+                        <p className="font-bold text-foreground text-sm leading-tight px-3 pt-3">
+                          {product.name}
+                        </p>
+                      </button>
+                      {product.description && (
+                        <div className="px-3">
+                          <ProductDescription description={product.description} />
+                        </div>
+                      )}
+                      <button
+                        type="button"
+                        disabled={out}
+                        onClick={() => handleProductClick(product)}
+                        className={`mt-auto px-3 pb-3 pt-2 text-left ${
+                          out ? 'cursor-not-allowed' : 'active:scale-[0.98]'
+                        }`}
+                      >
+                        <ProductPrice
+                          price={product.price}
+                          effectivePrice={product.effectivePrice}
+                          hasPromotion={product.hasPromotion}
+                          promoLabel={product.promoLabel}
+                          showBadge
+                        />
+                        {out && (
+                          <p className="text-[10px] font-bold text-red-400 mt-2">
+                            Agotado
+                          </p>
+                        )}
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>

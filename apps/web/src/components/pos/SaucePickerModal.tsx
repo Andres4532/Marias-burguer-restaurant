@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { SAUCE_NONE_LABEL, SAUCE_PLACEMENT_LABELS } from '@/lib/sauce-labels';
-import { ProductDescription } from '@/components/catalog/ProductDescription';
 import {
   MAX_SAUCES_TAKEAWAY_DELIVERY,
   canShowSaucePlacement,
@@ -134,8 +133,6 @@ export function SaucePickerModal({
   return (
     <Modal open={open} onClose={onClose} title={`Salsas · ${product.name}`}>
       <div className="space-y-4">
-        <ProductDescription description={product.description} className="text-sm" />
-
         <p className="text-sm text-text-secondary">{selectionHint}</p>
 
         <div className="space-y-2 max-h-56 overflow-y-auto rounded-xl border border-border bg-background p-3">

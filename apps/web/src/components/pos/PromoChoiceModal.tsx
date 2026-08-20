@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import { Modal } from '@/components/ui/Modal';
 import { Button } from '@/components/ui/Button';
 import { ProductPrice } from '@/components/catalog/ProductPrice';
-import { ProductDescription } from '@/components/catalog/ProductDescription';
 import { formatPrice } from '@/lib/catalog';
 import { resolveCartBasePrice } from '@/lib/product-pricing';
 import type { CatalogCategory } from '@/types/catalog';
@@ -44,8 +43,6 @@ export function PromoChoiceModal({
           promoLabel={product.promoLabel}
           size="md"
         />
-
-        <ProductDescription description={product.description} className="text-sm" />
 
         <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-border bg-background p-4">
           <input
