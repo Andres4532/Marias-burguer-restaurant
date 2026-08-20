@@ -1,9 +1,8 @@
 import type { Order } from '@/types/orders';
 import { formatOrderNumber, formatTime } from '@/lib/orders';
 import { formatPrice } from '@/lib/catalog';
-import { formatCartSauceLine, formatOrderItemSauces, SAUCE_NONE_LABEL } from '@/lib/sauce-labels';
+import { formatCartSauceLine, SAUCE_NONE_LABEL } from '@/lib/sauce-labels';
 import { ORDER_TYPE_LABELS, PAYMENT_METHOD_LABELS } from '@/types/orders';
-import { getGoogleMapsUrl, hasDeliveryCoordinates } from '@/lib/maps';
 import {
   applyPerCopyPageHeights,
   buildTicketPrintCss,
@@ -50,46 +49,6 @@ export function KitchenTicket({ order, copyLabel = 'COCINA' }: KitchenTicketProp
           <p className="ticket-type">{typeLabel.toUpperCase()}</p>
         )}
       </header>
-
-      {order.type === 'DELIVERY' && (
-        <>
-          <hr className="ticket-divider" />
-          <div className="ticket-block">
-            {order.customerName && (
-              <p className="ticket-line ticket-name-line">
-                <span className="ticket-label">Cliente:</span> {order.customerName}
-              </p>
-            )}
-            {order.customerPhone && (
-              <p className="ticket-line">
-                <span className="ticket-label">Tel:</span> {order.customerPhone}
-              </p>
-            )}
-            {order.deliveryAddress && (
-              <p className="ticket-line">
-                <span className="ticket-label">Dir:</span> {order.deliveryAddress}
-              </p>
-            )}
-            {order.deliveryReference && (
-              <p className="ticket-line">
-                <span className="ticket-label">Ref:</span> {order.deliveryReference}
-              </p>
-            )}
-            {hasDeliveryCoordinates(
-              order.deliveryLatitude,
-              order.deliveryLongitude,
-            ) && (
-              <p className="ticket-line ticket-line-wrap">
-                <span className="ticket-label">Maps:</span>{' '}
-                {getGoogleMapsUrl(
-                  order.deliveryLatitude!,
-                  order.deliveryLongitude!,
-                )}
-              </p>
-            )}
-          </div>
-        </>
-      )}
 
       <hr className="ticket-divider" />
 
