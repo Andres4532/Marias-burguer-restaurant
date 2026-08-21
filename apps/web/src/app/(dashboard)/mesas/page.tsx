@@ -6,6 +6,7 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { StatusBadge } from '@/components/orders/StatusBadge';
+import { CancelOrderButton } from '@/components/orders/CancelOrderButton';
 import {
   getMesaOrders,
   updateOrderStatus,
@@ -24,8 +25,12 @@ import {
   getOrderSummary,
   type Order,
 } from '@/types/orders';
+import { useAuth } from '@/hooks/useAuth';
+import { isJefa } from '@/lib/auth';
 
 export default function MesasPage() {
+  const { user } = useAuth();
+  const userIsJefa = isJefa(user);
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -252,6 +257,14 @@ export default function MesasPage() {
                           Ver detalle
                         </Button>
                       </Link>
+                      <CancelOrderButton
+                        order={order}
+                        isJefa={userIsJefa}
+                        disabled={busyId === order.id}
+                        size="md"
+                        className="inline-flex"
+                        onCancelled={() => load(true)}
+                      />
                     </div>
                   </div>
                 </div>

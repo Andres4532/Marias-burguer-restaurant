@@ -195,7 +195,7 @@ export function canChargeOrder(order: Order): boolean {
 }
 
 export function canCancelOrder(order: Order, isJefa: boolean): boolean {
-  if (order.status === 'CANCELADO' || order.status === 'ENTREGADO') {
+  if (order.status === 'CANCELADO') {
     return false;
   }
   if (isJefa) {

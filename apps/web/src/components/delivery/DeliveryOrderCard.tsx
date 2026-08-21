@@ -8,19 +8,24 @@ import { formatOrderNumber, formatTime } from '@/lib/orders';
 import { copyDeliveryWhatsAppMessage } from '@/lib/delivery-handoff';
 import { getDeliveryWorkflowStep, shouldShowSpeedHandoff } from '@/lib/delivery-workflow';
 import { DeliveryMapLinks } from '@/components/orders/DeliveryMapLinks';
+import { CancelOrderButton } from '@/components/orders/CancelOrderButton';
 import { hasDeliveryCoordinates } from '@/lib/maps';
 import type { Order } from '@/types/orders';
 
 interface DeliveryOrderCardProps {
   order: Order;
   busy?: boolean;
+  isJefa?: boolean;
   onAction: (order: Order) => void;
+  onCancelled?: () => void | Promise<void>;
 }
 
 export function DeliveryOrderCard({
   order,
   busy,
+  isJefa = false,
   onAction,
+  onCancelled,
 }: DeliveryOrderCardProps) {
   const [copied, setCopied] = useState(false);
   const workflow = getDeliveryWorkflowStep(order);
@@ -144,6 +149,15 @@ export function DeliveryOrderCard({
             </Button>
           </Link>
         </div>
+
+        <CancelOrderButton
+          order={order}
+          isJefa={isJefa}
+          disabled={busy}
+          size="sm"
+          className="w-full"
+          onCancelled={onCancelled}
+        />
       </div>
     </article>
   );

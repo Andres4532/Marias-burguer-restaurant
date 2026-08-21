@@ -545,10 +545,6 @@ export default function PublicMenuOrderPage() {
             <span>Total</span>
             <span className="text-primary">{formatPrice(cart.subtotal)}</span>
           </p>
-          <p className="flex justify-between items-center pt-1 text-base font-extrabold text-foreground">
-            <span>Total</span>
-            <span className="text-primary">{formatPrice(cart.subtotal)}</span>
-          </p>
 
           <div className="space-y-3 pt-2 border-t border-border">
             <p className="text-sm font-bold text-foreground">Forma de pago</p>

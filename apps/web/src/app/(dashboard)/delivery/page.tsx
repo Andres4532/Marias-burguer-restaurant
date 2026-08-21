@@ -25,6 +25,8 @@ import {
   PaymentProofConfirmModal,
 } from '@/components/orders/PaymentProofConfirmModal';
 import { isQrPublicOrder, type Order } from '@/types/orders';
+import { useAuth } from '@/hooks/useAuth';
+import { isJefa } from '@/lib/auth';
 
 const SECTION_META = [
   {
@@ -51,6 +53,8 @@ const SECTION_META = [
 
 export default function DeliveryPage() {
   const router = useRouter();
+  const { user } = useAuth();
+  const userIsJefa = isJefa(user);
   const { live, newOrderCount, deliveryNewCount, resetDeliveryNewCount } =
     useEntrantesAlerts();
   const [orders, setOrders] = useState<Order[]>([]);
@@ -244,7 +248,9 @@ export default function DeliveryPage() {
                       key={order.id}
                       order={order}
                       busy={busyId === order.id}
+                      isJefa={userIsJefa}
                       onAction={handleAction}
+                      onCancelled={() => load(true)}
                     />
                   ))}
                 </div>

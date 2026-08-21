@@ -9,6 +9,7 @@ import { Card } from '@/components/ui/Card';
 import { StatusBadge } from '@/components/orders/StatusBadge';
 import { DeliveryMapLinks } from '@/components/orders/DeliveryMapLinks';
 import { DeliveryHandoffButtons } from '@/components/orders/DeliveryHandoffButtons';
+import { CancelOrderButton } from '@/components/orders/CancelOrderButton';
 import { KitchenTicketPrintSet, printKitchenTicket } from '@/components/kitchen-ticket/KitchenTicket';
 import { TicketPrintHint } from '@/components/kitchen-ticket/TicketPrintHint';
 import { TicketPreviewModal } from '@/components/kitchen-ticket/TicketPreviewModal';
@@ -27,7 +28,6 @@ import {
   PAYMENT_METHOD_LABELS,
   getOrderSummary,
   canEditOrder,
-  canCancelOrder,
   canChargeOrder,
   isQrPublicOrder,
   type Order,
@@ -116,12 +116,12 @@ export default function PedidoDetallePage() {
     }
   };
 
-  const handleCancel = async () => {
-    const message = order?.payment
-      ? '¿Cancelar este pedido aunque ya fue cobrado? El registro del cobro se mantiene; devolvé el dinero al cliente si corresponde.'
-      : '¿Cancelar este pedido?';
-    if (!confirm(message)) return;
-    await handleStatusChange('CANCELADO');
+  const reloadOrder = async () => {
+    try {
+      setOrder(await getOrder(id));
+    } catch (e) {
+      setError(getErrorMessage(e));
+    }
   };
 
   if (loading) {
@@ -150,7 +150,6 @@ export default function PedidoDetallePage() {
   const nextStatusLabel = getNextStatusLabel(order);
   const isPaid = !!order.payment;
   const userIsJefa = isJefa(user);
-  const showCancel = canCancelOrder(order, userIsJefa);
 
   return (
     <>
@@ -412,22 +411,18 @@ export default function PedidoDetallePage() {
                   </p>
                 )}
 
-              {showCancel && (
-                <Button
-                  variant="danger"
-                  onClick={handleCancel}
-                  disabled={updating}
-                  className="w-full"
-                >
-                  Cancelar pedido
-                </Button>
-              )}
+              <CancelOrderButton
+                order={order}
+                isJefa={userIsJefa}
+                disabled={updating}
+                onCancelled={reloadOrder}
+              />
 
-              {!showCancel &&
+              {!userIsJefa &&
                 order.status !== 'CANCELADO' &&
                 order.status !== 'ENTREGADO' &&
                 !isPaid &&
-                !userIsJefa && (
+                order.status !== 'PENDIENTE' && (
                   <p className="text-xs text-text-secondary">
                     Solo la jefa puede cancelar pedidos en cocina o por
                     confirmar.

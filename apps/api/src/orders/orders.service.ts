@@ -893,7 +893,9 @@ export class OrdersService {
         user.role === UserRole.CAJERA &&
         order.status === OrderStatus.PENDIENTE &&
         !order.payment;
-      const jefaCanCancel = user.role === UserRole.JEFA;
+      const jefaCanCancel =
+        user.role === UserRole.JEFA &&
+        order.status !== OrderStatus.CANCELADO;
 
       if (!cajeraCanCancel && !jefaCanCancel) {
         throw new ForbiddenException(
@@ -911,7 +913,13 @@ export class OrdersService {
       CANCELADO: [],
     };
 
-    if (!validTransitions[order.status].includes(status)) {
+    const isAllowedTransition =
+      validTransitions[order.status].includes(status) ||
+      (status === OrderStatus.CANCELADO &&
+        user.role === UserRole.JEFA &&
+        order.status !== OrderStatus.CANCELADO);
+
+    if (!isAllowedTransition) {
       throw new BadRequestException(
         `No se puede cambiar de ${order.status} a ${status}`,
       );

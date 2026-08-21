@@ -6,6 +6,7 @@ import { PageHeader } from '@/components/ui/PageHeader';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { StatusBadge } from '@/components/orders/StatusBadge';
+import { CancelOrderButton } from '@/components/orders/CancelOrderButton';
 import { useEntrantesAlerts } from '@/components/entrantes/EntrantesAlertsProvider';
 import { getEntrantesOrders, confirmPublicOrder, formatOrderNumber, formatTime } from '@/lib/orders';
 import { formatPrice, getErrorMessage } from '@/lib/catalog';
@@ -24,8 +25,12 @@ import {
   isQrPublicOrder,
   type Order,
 } from '@/types/orders';
+import { useAuth } from '@/hooks/useAuth';
+import { isJefa } from '@/lib/auth';
 
 export default function EntrantesPage() {
+  const { user } = useAuth();
+  const userIsJefa = isJefa(user);
   const { live, newOrderCount, resetRecojoNewCount } = useEntrantesAlerts();
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
@@ -249,6 +254,14 @@ export default function EntrantesPage() {
                         Cobrar →
                       </Button>
                     )}
+                    <CancelOrderButton
+                      order={order}
+                      isJefa={userIsJefa}
+                      disabled={confirmingId === order.id}
+                      size="md"
+                      className="inline-flex"
+                      onCancelled={() => load(true)}
+                    />
                   </div>
                 </div>
               </div>
